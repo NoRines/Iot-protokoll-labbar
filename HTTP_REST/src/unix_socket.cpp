@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #include "unix_socket.h"
 
 #include <iostream>
@@ -343,3 +345,4 @@ Address UnixSocket::getAddress()
 	return {std::string(buf), ntohs(hint.sin_port)};
 }
 
+#endif

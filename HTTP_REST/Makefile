@@ -4,7 +4,7 @@ O_FOLDER = obj/
 SRC_FOLDER = src/
 CFLAGS = 
 LIBS = 
-EXE_NAME = socket
+EXE_NAME = program.app
 # ---------------------------------------------------
 
 CC = clang++ -std=c++14 $(CFLAGS)

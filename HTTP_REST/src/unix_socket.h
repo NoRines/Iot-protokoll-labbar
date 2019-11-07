@@ -1,3 +1,5 @@
+#ifdef __linux__
+
 #ifndef UNIX_SOCKET_H
 #define UNIX_SOCKET_H
 
@@ -28,5 +30,6 @@ private:
 	int sock;
 };
 
+#endif
 
 #endif

@@ -33,9 +33,12 @@
 
 *.swp
 
-*.snl
+*.sln
 *.vcxproj
 *.filters
 *.user
 
 .vs/*
+
+*.db
+*.opendb

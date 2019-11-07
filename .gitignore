@@ -32,3 +32,8 @@
 *.app
 
 *.swp
+
+*.snl
+*.vcxproj
+*.filters
+*.user

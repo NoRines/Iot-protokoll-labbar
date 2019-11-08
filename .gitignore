@@ -42,3 +42,15 @@
 
 *.db
 *.opendb
+
+*.suo
+*.ipch
+*.pdb
+*.tlog
+*.lastbuildstate
+*.idb
+*.ilk
+*.log
+
+*.APS
+*.txt

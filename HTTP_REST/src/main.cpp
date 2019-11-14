@@ -13,36 +13,6 @@
 #pragma comment(lib, "Ws2_32.lib")
 #endif
 
-void msgHandler(Socket* sock)
-{
-	std::unique_ptr<Socket> clientSocket(sock);
-
-	auto clientAddr = clientSocket->getAddress();
-	std::cout << clientAddr.host << " : " << clientAddr.port << std::endl;
-
-	char buf[4096];
-
-	memset(buf, 0, 4096);
-	int numBytes = clientSocket->receive(buf, 4096);
-
-	if(numBytes == 0)
-	{
-		std::cout << "Client dissconnected" << std::endl;
-		clientSocket->shutdown(SocketShutdownType::RDWR);
-		clientSocket->close();
-		return;
-	}
-
-	std::cout << "Recived: " << std::string(buf, 0, numBytes) << std::endl;
-
-	clientSocket->send("HTTP/1.1 200 OK\r\n\r\n<h1>HENLO MINE FREN</h1>");
-
-	clientSocket->shutdown(SocketShutdownType::RDWR);
-	clientSocket->close();
-
-	std::cout << "Close the connection" << std::endl;
-}
-
 void msgHandler(Socket* sock) {
 
 	std::unique_ptr<Socket> clientSock(sock);

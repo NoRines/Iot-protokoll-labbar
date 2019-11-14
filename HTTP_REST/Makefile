@@ -3,7 +3,7 @@
 O_FOLDER = obj/
 SRC_FOLDER = src/
 CFLAGS = 
-LIBS = 
+LIBS = -pthread
 EXE_NAME = program.app
 # ---------------------------------------------------
 

@@ -1,13 +1,46 @@
 #include <iostream>
 #include <memory>
 #include "win_socket.h"
+#include "unix_socket.h"
+#include <cstring>
+#include <thread>
 
-
+#ifdef _WIN32
 #include <Ws2tcpip.h>
-
 
 // Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
+#endif
+
+void msgHandler(Socket* sock)
+{
+	std::unique_ptr<Socket> clientSocket(sock);
+
+	auto clientAddr = clientSocket->getAddress();
+	std::cout << clientAddr.host << " : " << clientAddr.port << std::endl;
+
+	char buf[4096];
+
+	memset(buf, 0, 4096);
+	int numBytes = clientSocket->receive(buf, 4096);
+
+	if(numBytes == 0)
+	{
+		std::cout << "Client dissconnected" << std::endl;
+		clientSocket->shutdown(SocketShutdownType::RDWR);
+		clientSocket->close();
+		return;
+	}
+
+	std::cout << "Recived: " << std::string(buf, 0, numBytes) << std::endl;
+
+	clientSocket->send("HTTP/1.1 200 OK\r\n\r\n<h1>HENLO MINE FREN</h1>");
+
+	clientSocket->shutdown(SocketShutdownType::RDWR);
+	clientSocket->close();
+
+	std::cout << "Close the connection" << std::endl;
+}
 
 int main(int argc, char** argv)
 {
@@ -73,37 +106,26 @@ int main(int argc, char** argv)
 	{
 		std::unique_ptr<Socket> serverSocket(new UnixSocket(SocketType::STREAM));
 
-		serverSocket->bind("0.0.0.0", 54000);
+		serverSocket->bind("127.0.0.1", 80);
 
 		serverSocket->listen();
 
-		std::unique_ptr<Socket> clientSocket(serverSocket->accept());
-
-		auto clientAddr = clientSocket->getAddress();
-		std::cout << clientAddr.host << " : " << clientAddr.port << std::endl;
-
-		serverSocket->shutdown(SocketShutdownType::RDWR);
-
-		char buf[4096];
-
 		while(true)
 		{
-			memset(buf, 0, 4096);
-			int numBytes = clientSocket->receive(buf, 4096);
+			Socket* sock = serverSocket->accept();
 
-			if(numBytes == 0)
-			{
-				std::cout << "Client dissconnected" << std::endl;
-				break;
-			}
-
-			std::cout << "Recived: " << std::string(buf, 0, numBytes) << std::endl;
-
-			clientSocket->send(std::string(buf, 0, numBytes));
+			std::thread newThread(msgHandler, sock);
+			newThread.detach();
 		}
 
-		clientSocket->shutdown(SocketShutdownType::RDWR);
+		serverSocket->shutdown(SocketShutdownType::RDWR);
+		serverSocket->close();
+
 	} catch(const char* error)
+	{
+		std::cout << error << std::endl;
+		return 1;
+	} catch(std::string error)
 	{
 		std::cout << error << std::endl;
 		return 1;

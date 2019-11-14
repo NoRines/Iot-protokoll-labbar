@@ -133,7 +133,8 @@ void UnixSocket::bind(const std::string& address, int port)
 
 	if(bindRes < 0)
 	{
-		throw "Could not bind the socket.";
+		std::string error = (std::string("Could not bind the socket. ") + std::to_string(bindRes));
+		throw error;
 	}
 
 
@@ -158,7 +159,7 @@ void UnixSocket::listen()
 
 	if(listenRes < 0)
 	{
-		throw "Could not start listen.";
+		throw std::string("Could not start listen.");
 	}
 }
 
@@ -192,7 +193,7 @@ Socket* UnixSocket::accept()
 
 	if(clientSocket < 0)
 	{
-		throw "Could not accept the client.";
+		throw std::string("Could not accept the client.");
 	}
 
 	return new UnixSocket(clientSocket);
@@ -340,7 +341,7 @@ Address UnixSocket::getAddress()
 	memset(buf, 0, INET_ADDRSTRLEN);
 
 //const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
-	::inet_ntop(AF_INET, &hint, buf, INET_ADDRSTRLEN);
+	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
 
 	return {std::string(buf), ntohs(hint.sin_port)};
 }

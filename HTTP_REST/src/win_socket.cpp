@@ -2,11 +2,16 @@
 
 #include "win_socket.h"
 
+
+#pragma comment(lib, "Ws2_32.lib")
+struct addrinfo *result = NULL, *ptr = NULL, hints;
+
 WinSocket::WinSocket(SOCKET s) : Socket(), sock(s)
 {}
 
 WinSocket::WinSocket(SocketType type) : Socket()
 {
+
 	sock = INVALID_SOCKET;
 
 	sock = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -60,7 +65,7 @@ void WinSocket::listen()
 
 Socket* WinSocket::accept()
 {
-	SOCKET ClientSocket = ::accept(sock, NULL, NULL);
+	SOCKET ClientSocket = ::accept(sock, (sockaddr*)NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET)
 	{
 		throw std::string("accept failed with error %d\n", WSAGetLastError()).c_str();
@@ -137,7 +142,6 @@ Address WinSocket::getAddress()
 
 	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
 
-	return { std::string(buf), ntohs(hint.sin_port) };
+	return{ std::string(buf), ntohs(hint.sin_port) };
 }
-
 #endif

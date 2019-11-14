@@ -1,54 +1,17 @@
 #ifdef _WIN32
 
 #include "win_socket.h"
-#include <Windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <iphlpapi.h>
-#include <stdio.h>
+
 
 #pragma comment(lib, "Ws2_32.lib")
-#define DEFAULT_PORT "54000"
-#define DEFAULT_BUFLEN 4096
 struct addrinfo *result = NULL, *ptr = NULL, hints;
 
-WinSocket::WinSocket(SocketType type)
-{
-	
-	int iResult;
-
-	sock = INVALID_SOCKET;
-	
-
-	struct addrinfo *result = NULL;
-	struct addrinfo hints;
-
-	int iSendResult;
-	char recvbuf[DEFAULT_BUFLEN];
-	int recvbuflen = DEFAULT_BUFLEN;
-
-
-
-	ZeroMemory(&hints, sizeof(hints));
-	hints.ai_family = AF_INET;
-	if (type == SocketType::DGRAM)
-	{
-		hints.ai_socktype = SOCK_DGRAM;
-		hints.ai_protocol = IPPROTO_UDP;
-	}
-	else 
-	{
-		hints.ai_socktype = SOCK_STREAM;
-		hints.ai_protocol = IPPROTO_TCP;
-	}
-	hints.ai_flags = AI_PASSIVE;
-
-}
 WinSocket::WinSocket(SOCKET s) : Socket(), sock(s)
 {}
 
 WinSocket::WinSocket(SocketType type) : Socket()
 {
+
 	sock = INVALID_SOCKET;
 
 	sock = ::socket(AF_INET, SOCK_STREAM, 0);

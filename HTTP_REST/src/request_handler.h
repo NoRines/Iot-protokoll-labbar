@@ -39,14 +39,20 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	}
 	else if(request.action == "PUT")
 	{
-		if (file_exists(request.body.substr(0, request.body.find('\n')) + ".txt"))
+		if (file_exists(request.body.substr(0, request.body.find('\r\n')) + ".txt"))
 		{
 			std::ofstream writer;
-			writer.open(request.body.substr(0, request.body.find('\n')) + ".txt");
-			std::string fat = request.body.substr(request.body.find('\n')+1);
-			writer << fat;
+			writer.open(request.body.substr(0, request.body.find('\r')) + ".txt");
+			std::string content = request.body.substr(request.body.find('\n')+1);
+			if (!writer.is_open()) {
+				std::cout << "file exists but cant open " <<content<< std::endl;
+				response_code = "HTTP/1.1 500 Internal Server Error \r\n\r\n";
+			}
+			else{
+			writer << content;
 			response_code = "HTTP/1.1 200 OK \r\n\r\n";
-			headerinfo_n_body = "";
+			writer.close();
+			headerinfo_n_body = "";}
 		}
 		else
 		{

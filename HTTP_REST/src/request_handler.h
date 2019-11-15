@@ -82,7 +82,7 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	}
 	else
 	{
-		throw "illegal action " + request.action;
+		throw "illegal action " + request.action + "  " + request.path + "  " + request.body;
 	}
 
 	return std::make_pair(response_code, headerinfo_n_body);

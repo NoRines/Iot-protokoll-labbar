@@ -17,10 +17,10 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	
 	if (request.action == "GET") //inte kollat om fungerar än
 	{
-		if (file_exists(request.body + ".txt"))
+		if (file_exists(request.path + ".txt"))
 		{
 			std::ifstream reader;
-			reader.open(request.body + ".txt");
+			reader.open(request.path + ".txt");
 			std::string data;
 			std::string line;
 			while (reader.good())
@@ -70,9 +70,9 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	}
 	else if (request.action == "DELETE")//inte kollat om fungerar än
 	{
-		if (file_exists(request.body + ".txt"))
+		if (file_exists(request.path + ".txt"))
 		{
-			std::remove((request.body + ".txt").c_str());
+			std::remove((request.path + ".txt").c_str());
 			response_code = "HTTP/1.1 200 OK\r\n\r\n";
 		}
 		else

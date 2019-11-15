@@ -5,7 +5,8 @@
 #include "unix_socket.h"
 #include <cstring>
 #include <thread>
-
+#include "request_pod.h"
+#include "request_handler.h"
 #ifdef _WIN32
 #include <Ws2tcpip.h>
 
@@ -33,12 +34,20 @@ void msgHandler(Socket* sock) {
 		return;
 	}
 
-	std::cout << "Recived> " << std::string(buf, 0, bytesRecived) << std::endl;
+	//std::cout << "Recived> " << std::string(buf, 0, bytesRecived) << std::endl;
 	std::string resp = std::string(buf, 0, bytesRecived);
-	int body_pos = resp.find("\r\n\r\n");
-	resp = "<h1>resp:"+resp.substr(resp.find("\r\n\r\n"), bytesRecived - body_pos)+"</h1>";
+	//int body_pos = resp.find("\r\n\r\n");
+	//resp = "<h1>resp:"+resp.substr(resp.find("\r\n\r\n"), bytesRecived - body_pos)+"</h1>";
+	std::cout << resp << std::endl << std::endl << std::endl << std::endl;
+	RequestPod r;
+	r = populate(resp);
 	//clientSock->send(std::string(buf, 0, bytesRecived));
-	clientSock->send("HTTP/1.1 200 OK \r\n\r\n"+resp);
+	//clientSock->send("HTTP/1.1 200 OK \r\n\r\n"+resp);
+	//clientSock->send("HTTP/1.1 200 OK \r\n\r\n" + r.body);
+	std::pair<std::string, std::string> res = requestHandler(r);
+	std::cout << (res.first + res.second).c_str() << std::endl;
+	clientSock->send((res.first + res.second));
+
 	clientSock->shutdown(SocketShutdownType::RDWR);
 	clientSock->close();
 }

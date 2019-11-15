@@ -6,8 +6,10 @@
 struct RequestPod 
 {
 	std::string action = "";
+	std::string path = "";
 	int content_length = 0;
 	std::string body = "";
+	
 };
 
 RequestPod populate(std::string input) {
@@ -15,6 +17,7 @@ RequestPod populate(std::string input) {
 	std::string act = input.substr(0, input.find(" "));
 	res.action = act;
 	res.content_length = 0;
+	std::string path = input.substr(input.find(" "));
 	//std::cout << "act " << act << std::endl;
 	size_t content_len_position = input.find("Content-Length:");
 	if (content_len_position != std::string::npos)

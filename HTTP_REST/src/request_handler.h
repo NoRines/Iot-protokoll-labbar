@@ -29,7 +29,7 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 				data += line; //kan vara många rader, därav loop
 			}
 			reader.close();
-			headerinfo_n_body = "Content-Length: " + data.size() + std::string("\r\n\r\n") + data;
+			headerinfo_n_body = "Content-Length: " + std::to_string(data.size()) + std::string("\r\n\r\n") + data;
 			response_code = "HTTP/1.1 200 OK\r\n";
 		}
 		else

@@ -73,7 +73,7 @@ int main(int argc, char** argv)
 #ifdef __linux__
 	try
 	{
-		std::unique_ptr<Socket> serverSocket(new UnixSocket(SocketType::STREAM));
+		std::unique_ptr<Socket> serverSock(new UnixSocket(SocketType::STREAM));
 #endif
 
 		serverSock->bind("0.0.0.0", 80);

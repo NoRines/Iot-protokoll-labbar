@@ -1,2 +1,2 @@
-# Iot-protokoll-labbar
-För labbar i iot protokoll kursen.
+# HTTP REST
+Labb för att implementera en HTTP REST server.

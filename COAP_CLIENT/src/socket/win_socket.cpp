@@ -69,12 +69,12 @@ WinSocket::~WinSocket()
 	quitWsa();
 }
 
-void WinSocket::connect(const std::string& address, int port)
+void WinSocket::connect(const Address& address)
 {
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	inet_pton(AF_INET, address.c_str(), &addr.sin_addr);
+	addr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &addr.sin_addr);
 
 	int bindRes = ::connect(sock, (sockaddr*)&addr, sizeof(addr));
 	if (bindRes == SOCKET_ERROR)
@@ -83,12 +83,12 @@ void WinSocket::connect(const std::string& address, int port)
 	}
 }
 
-void WinSocket::bind(const std::string& address, int port)
+void WinSocket::bind(const Address& address)
 {
 	sockaddr_in addr;
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port);
-	inet_pton(AF_INET, address.c_str(), &addr.sin_addr);
+	addr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &addr.sin_addr);
 
 	int bindRes = ::bind(sock, (sockaddr*)&addr, sizeof(addr));
 	if (bindRes == SOCKET_ERROR)
@@ -128,6 +128,23 @@ int WinSocket::send(const std::string& msg)
 	return bytesSent;
 }
 
+int WinSocket::sendTo(const std::string& msg, const Address& address)
+{
+	sockaddr_in destAddr;
+	destAddr.sin_family = AF_INET;
+	destAddr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &destAddr.sin_addr);
+
+	int bytesSent = ::sendto(s, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
+
+	if(bytesSent == SOCKET_ERROR)
+	{
+		throw std::string("sendto failed with error %d\n", WSAGetLastError());
+	}
+
+	return bytesSent;
+}
+
 int WinSocket::receive(char* buf, int bufSize)
 {
 	int bytesRecived = recv(sock, buf, bufSize, 0);
@@ -135,6 +152,24 @@ int WinSocket::receive(char* buf, int bufSize)
 	if (bytesRecived == SOCKET_ERROR)
 	{
 		throw std::string("recv failed with error %d\n", WSAGetLastError());
+	}
+
+	return bytesRecived;
+}
+
+int WinSocket::receiveFrom(char* buf, int bufSize, const Address& address)
+{
+	sockaddr_in srcAddr;
+	srcAddr.sin_family = AF_INET;
+	srcAddr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &srcAddr.sin_addr);
+	socklen_t addrSize = sizeof(srcAddr);
+
+	int bytesRecived = ::recvfrom(sock, buf, bufSize, 0, (sockaddr*)&srcAddr, &addrSize);
+
+	if(bytesRecived == SOCKET_ERROR)
+	{
+		throw std::string("recvfrom failed with error %d\n", WSAGetLastError());
 	}
 
 	return bytesRecived;

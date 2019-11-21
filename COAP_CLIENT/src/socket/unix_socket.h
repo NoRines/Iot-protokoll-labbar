@@ -14,12 +14,17 @@ public:
 	UnixSocket(SocketType type);
 	~UnixSocket();
 
-	void connect(const std::string& address, int port) override;
-	void bind(const std::string& address, int port) override;
+	void connect(const Address& address) override;
+	void bind(const Address& address) override;
 	void listen() override;
 	SocketInterface* accept() override;
+
 	int send(const std::string& msg) override;
+	int sendTo(const std::string& msg, const Address& address) override;
+
 	int receive(char* buf, int bufSize) override;
+	int receiveFrom(char* buf, int bufSize, const Address& address) override;
+
 	void shutdown(SocketShutdownType type) override;
 	void close() override;
 	Address getAddress() override;

@@ -32,12 +32,17 @@ public:
 	SocketInterface() {}
 	virtual ~SocketInterface() = default;
 
-	virtual void connect(const std::string& address, int port) = 0;
-	virtual void bind(const std::string& address, int port) = 0;
+	virtual void connect(const Address& address) = 0;
+	virtual void bind(const Address& address) = 0;
 	virtual void listen() = 0;
 	virtual SocketInterface* accept() = 0;
+
 	virtual int send(const std::string& msg) = 0;
+	virtual int sendTo(const std::string& msg, const Address& address) = 0;
+
 	virtual int receive(char* buf, int bufSize) = 0;
+	virtual int receiveFrom(char* buf, int bufSize, const Address& address) = 0;
+	
 	virtual void shutdown(SocketShutdownType type) = 0;
 	virtual void close() = 0;
 	virtual Address getAddress() = 0;

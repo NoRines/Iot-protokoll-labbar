@@ -67,7 +67,7 @@ UnixSocket::~UnixSocket()
 	close();
 }
 
-void UnixSocket::connect(const std::string& address, int port)
+void UnixSocket::connect(const Address& address)
 {
 	// 	int connect(int socket, const struct sockaddr* address,
 	// 		socklen_t address_len)
@@ -91,8 +91,8 @@ void UnixSocket::connect(const std::string& address, int port)
 
 	sockaddr_in hint;
 	hint.sin_family = AF_INET;
-	hint.sin_port = htons(port);
-	inet_pton(AF_INET, address.c_str(), &hint.sin_addr);
+	hint.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &hint.sin_addr);
 
 	int connRes = ::connect(sock, (sockaddr*)(&hint), sizeof(hint));
 
@@ -102,7 +102,7 @@ void UnixSocket::connect(const std::string& address, int port)
 	}
 }
 
-void UnixSocket::bind(const std::string& address, int port)
+void UnixSocket::bind(const Address& address)
 {
 	// 	int bind(int socket, const struct sockaddr *address,
 	// 		socklen_t address_len);
@@ -126,8 +126,8 @@ void UnixSocket::bind(const std::string& address, int port)
 	
 	sockaddr_in hint;
 	hint.sin_family = AF_INET;
-	hint.sin_port = htons(port);
-	inet_pton(AF_INET, address.c_str(), &hint.sin_addr);
+	hint.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &hint.sin_addr);
 
 	int bindRes = ::bind(sock, (sockaddr*)(&hint), sizeof(hint));
 
@@ -239,6 +239,23 @@ int UnixSocket::send(const std::string& msg)
 	return sendRes;
 }
 
+int UnixSocket::sendTo(const std::string& msg, const Address& address)
+{
+	sockaddr_in destAddr;
+	destAddr.sin_family = AF_INET;
+	destAddr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &destAddr.sin_addr);
+
+	int bytesSent = ::sendto(sock, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
+
+	if(bytesSent < 0)
+	{
+		throw std::string("Message could not be sent to destination.");
+	}
+
+	return bytesSent;
+}
+
 int UnixSocket::receive(char* buf, int bufSize)
 {
 	//	ssize_t send(int socket, const void* buffer, size_t length, int flags)
@@ -277,6 +294,24 @@ int UnixSocket::receive(char* buf, int bufSize)
 	}
 
 	return recvRes;
+}
+
+int UnixSocket::receiveFrom(char* buf, int bufSize, const Address& address)
+{
+	sockaddr_in srcAddr;
+	srcAddr.sin_family = AF_INET;
+	srcAddr.sin_port = htons(address.port);
+	inet_pton(AF_INET, address.host.c_str(), &srcAddr.sin_addr);
+	socklen_t addrSize = sizeof(srcAddr);
+
+	int bytesRecived = ::recvfrom(sock, buf, bufSize, 0, (sockaddr*)&srcAddr, &addrSize);
+
+	if(bytesRecived < 0)
+	{
+		throw std::string("Failed when receiving from an address");
+	}
+
+	return bytesRecived;
 }
 
 void UnixSocket::shutdown(SocketShutdownType type)

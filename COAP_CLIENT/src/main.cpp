@@ -1,4 +1,4 @@
-#include "socket.h"
+#include "socket/socket.h"
 #include <memory>
 #include <thread>
 #include <iostream>
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 	{
 		std::unique_ptr<SocketInterface> serverSocket = std::make_unique<Socket>(SocketType::STREAM);
 
-		serverSocket->bind("0.0.0.0", 80);
+		serverSocket->bind({"0.0.0.0", 80});
 		serverSocket->listen();
 
 		for(int i = 0; i < 5; i++)

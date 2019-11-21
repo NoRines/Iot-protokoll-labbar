@@ -28,7 +28,7 @@ void msgHandler(Socket* sock) {
 
 	if (bytesRecived == 0)
 	{
-		std::cout << "Dissconnected" << std::endl;
+		std::cout << "Disconnected" << std::endl;
 		clientSock->shutdown(SocketShutdownType::RDWR);
 		clientSock->close();
 		return;
@@ -68,8 +68,15 @@ int main(int argc, char** argv)
 	try
 	{
 		std::unique_ptr<Socket> serverSock(new WinSocket(SocketType::STREAM));
+#endif
 
-		serverSock->bind("127.0.0.1", 80);
+#ifdef __linux__
+	try
+	{
+		std::unique_ptr<Socket> serverSocket(new UnixSocket(SocketType::STREAM));
+#endif
+
+		serverSock->bind("0.0.0.0", 80);
 
 		serverSock->listen();
 		std::cout << "Listening..." << std::endl;
@@ -93,40 +100,9 @@ int main(int argc, char** argv)
 		std::cerr << err << std::endl;
 	}
 
+#ifdef _WIN32
 	// Shutdown winsock
 	WSACleanup();
-
-#endif
-#ifdef __linux__
-	try
-	{
-		std::unique_ptr<Socket> serverSocket(new UnixSocket(SocketType::STREAM));
-
-		serverSocket->bind("127.0.0.1", 80);
-
-		serverSocket->listen();
-
-		while(true)
-		{
-			Socket* sock = serverSocket->accept();
-
-			std::thread newThread(msgHandler, sock);
-			newThread.detach();
-		}
-
-		serverSocket->shutdown(SocketShutdownType::RDWR);
-		serverSocket->close();
-
-	} catch(const char* error)
-	{
-		std::cout << error << std::endl;
-		return 1;
-	} catch(std::string error)
-	{
-		std::cout << error << std::endl;
-		return 1;
-	}
-
 #endif
 	return 0;
 }

@@ -39,11 +39,13 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	}
 	else if(request.action == "PUT")
 	{
-		if (file_exists(request.body.substr(0, request.body.find('\r\n')) + ".txt"))
+		std::string fileName = request.path+".txt";
+		std::cout << "FILE: " << fileName << std::endl;
+		if (file_exists(fileName))
 		{
 			std::ofstream writer;
-			writer.open(request.body.substr(0, request.body.find('\r')) + ".txt");
-			std::string content = request.body.substr(request.body.find('\n')+1);
+			writer.open(request.path + ".txt");
+			std::string content = request.body;
 			if (!writer.is_open()) {
 				std::cout << "file exists but cant open " <<content<< std::endl;
 				response_code = "HTTP/1.1 500 Internal Server Error \r\n\r\n";
@@ -61,7 +63,7 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 	}
 	else if (request.action == "POST")
 	{
-		if (file_exists(request.body + ".txt"))
+		if (file_exists(request.path+ ".txt"))
 		{
 			response_code = "HTTP/1.1 409 Conflict \r\n\r\n";
 
@@ -69,7 +71,8 @@ std::pair<std::string, std::string> requestHandler(RequestPod request) {
 		else 
 		{
 			std::ofstream writer;
-			writer.open(request.body + ".txt");
+			//std::cout << request.body << std::endl << request.body.length() << std::endl;
+			writer.open(request.path + ".txt");
 			writer.close();
 			response_code = "HTTP/1.1 201 Success\r\n\r\n";
 		}

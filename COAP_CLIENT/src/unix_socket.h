@@ -3,12 +3,12 @@
 #ifndef UNIX_SOCKET_H
 #define UNIX_SOCKET_H
 
-#include "socket.h"
+#include "socket_interface.h"
 
-class UnixSocket : public Socket
+class UnixSocket : public SocketInterface
 {
 public:
-	UnixSocket(const Socket& s) = delete;
+	UnixSocket(const UnixSocket& s) = delete;
 	UnixSocket& operator=(const UnixSocket& s) = delete;
 
 	UnixSocket(SocketType type);
@@ -17,7 +17,7 @@ public:
 	void connect(const std::string& address, int port) override;
 	void bind(const std::string& address, int port) override;
 	void listen() override;
-	Socket* accept() override;
+	SocketInterface* accept() override;
 	int send(const std::string& msg) override;
 	int receive(char* buf, int bufSize) override;
 	void shutdown(SocketShutdownType type) override;

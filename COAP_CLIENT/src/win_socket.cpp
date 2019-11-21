@@ -6,24 +6,67 @@
 #pragma comment(lib, "Ws2_32.lib")
 struct addrinfo *result = NULL, *ptr = NULL, hints;
 
-WinSocket::WinSocket(SOCKET s) : Socket(), sock(s)
-{}
 
-WinSocket::WinSocket(SocketType type) : Socket()
+int WinSocket::numSocketsActive = 0;
+
+static void WinSocket::initWsa()
 {
+	if(numSocketsActive == 0)
+	{
+		// Init winsock
+		WSADATA wsaData;
+
+		// Initialize Winsock
+		int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+		if (iResult != 0) {
+			printf("WSAStartup failed: %d\n", iResult);
+			throw std::string("Error when init WSA: %d\n", WSAGetLastError());
+		}
+	}
+	numSocketsActive++;
+}
+
+static void WinSocket::quitWsa()
+{
+	if(numSocketsActive == 1)
+		WSACleanup();
+	numSocketsActive--;
+}
+
+WinSocket::WinSocket(SOCKET s) : SocketInterface(), sock(s)
+{
+	initWsa();
+}
+
+WinSocket::WinSocket(SocketType type) : SocketInterface()
+{
+	initWsa();
 
 	sock = INVALID_SOCKET;
 
-	sock = ::socket(AF_INET, SOCK_STREAM, 0);
+	int sockType = 0;
+	switch(type)
+	{
+		case SocketType::STREAM:
+			sockType = SOCK_STREAM;
+			break;
+		case SocketType::DGRAM:
+			sockType = SOCK_DGRAM;
+			break;
+	}
+
+	sock = ::socket(AF_INET, sockType, 0);
 	if (sock == INVALID_SOCKET)
 	{
-		throw std::string("creating socket failed: %d\n", WSAGetLastError()).c_str();
+		throw std::string("creating socket failed: %d\n", WSAGetLastError());
 	}
 }
 
 WinSocket::~WinSocket()
 {
 	close();
+
+	quitWsa();
 }
 
 void WinSocket::connect(const std::string& address, int port)
@@ -36,7 +79,7 @@ void WinSocket::connect(const std::string& address, int port)
 	int bindRes = ::connect(sock, (sockaddr*)&addr, sizeof(addr));
 	if (bindRes == SOCKET_ERROR)
 	{
-		throw std::string("connect failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("connect failed with error %d\n", WSAGetLastError());
 	}
 }
 
@@ -50,7 +93,7 @@ void WinSocket::bind(const std::string& address, int port)
 	int bindRes = ::bind(sock, (sockaddr*)&addr, sizeof(addr));
 	if (bindRes == SOCKET_ERROR)
 	{
-		throw std::string("bind failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("bind failed with error %d\n", WSAGetLastError());
 	}
 }
 
@@ -59,16 +102,16 @@ void WinSocket::listen()
 	int listenRes = ::listen(sock, SOMAXCONN);
 	if (listenRes == SOCKET_ERROR)
 	{
-		throw std::string("listen failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("listen failed with error %d\n", WSAGetLastError());
 	}
 }
 
-Socket* WinSocket::accept()
+SocketInterface* WinSocket::accept()
 {
 	SOCKET ClientSocket = ::accept(sock, (sockaddr*)NULL, NULL);
 	if (ClientSocket == INVALID_SOCKET)
 	{
-		throw std::string("accept failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("accept failed with error %d\n", WSAGetLastError());
 	}
 	return new WinSocket(ClientSocket);
 }
@@ -79,7 +122,7 @@ int WinSocket::send(const std::string& msg)
 
 	if (bytesSent == SOCKET_ERROR)
 	{
-		throw std::string("send failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("send failed with error %d\n", WSAGetLastError());
 	}
 
 	return bytesSent;
@@ -91,7 +134,7 @@ int WinSocket::receive(char* buf, int bufSize)
 
 	if (bytesRecived == SOCKET_ERROR)
 	{
-		throw std::string("recv failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("recv failed with error %d\n", WSAGetLastError());
 	}
 
 	return bytesRecived;
@@ -117,7 +160,7 @@ void WinSocket::shutdown(SocketShutdownType type)
 	int shutdownRes = ::shutdown(sock, t); // SD_SEND, SD_RECEIVE
 	if (shutdownRes == SOCKET_ERROR)
 	{
-		throw std::string("shutdown failed with error %d\n", WSAGetLastError()).c_str();
+		throw std::string("shutdown failed with error %d\n", WSAGetLastError());
 	}
 }
 
@@ -134,7 +177,7 @@ Address WinSocket::getAddress()
 
 	if (res == SOCKET_ERROR)
 	{
-		throw std::string("Error getting address/name %d\n", WSAGetLastError()).c_str();
+		throw std::string("Error getting address/name %d\n", WSAGetLastError());
 	}
 
 	char buf[INET_ADDRSTRLEN];

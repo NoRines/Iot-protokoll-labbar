@@ -13,11 +13,11 @@
 #include <string.h>
 #include <string>
 
-UnixSocket::UnixSocket(int s) : Socket(), sock(s)
+UnixSocket::UnixSocket(int s) : SocketInterface(), sock(s)
 {
 }
 
-UnixSocket::UnixSocket(SocketType type) : Socket()
+UnixSocket::UnixSocket(SocketType type) : SocketInterface()
 {
 	//	int socket(int domain, int type, int protocol)
 	//
@@ -58,7 +58,7 @@ UnixSocket::UnixSocket(SocketType type) : Socket()
 	sock = socket(AF_INET, t, 0);
 	if(sock < 0)
 	{
-		throw "Could not create Socket.";
+		throw std::string("Could not create Socket.");
 	}
 }
 
@@ -98,7 +98,7 @@ void UnixSocket::connect(const std::string& address, int port)
 
 	if(connRes < 0)
 	{
-		throw "Connection failed.";
+		throw std::string("Connection failed.");
 	}
 }
 
@@ -163,7 +163,7 @@ void UnixSocket::listen()
 	}
 }
 
-Socket* UnixSocket::accept()
+SocketInterface* UnixSocket::accept()
 {
 	//	int accept (int socket, struct sockaddr *address,
 	//		socklen_t *address_len);
@@ -233,7 +233,7 @@ int UnixSocket::send(const std::string& msg)
 
 	if(sendRes < 0)
 	{
-		throw "Message could not be sent.";
+		throw std::string("Message could not be sent.");
 	}
 
 	return sendRes;
@@ -273,7 +273,7 @@ int UnixSocket::receive(char* buf, int bufSize)
 
 	if(recvRes < 0)
 	{
-		throw "Error when receiving.";
+		throw std::string("Error when receiving.");
 	}
 
 	return recvRes;
@@ -316,7 +316,7 @@ void UnixSocket::shutdown(SocketShutdownType type)
 
 	if(shutRes < 0)
 	{
-		throw "Fail on shutdown of socket.";
+		throw std::string("Fail on shutdown of socket.");
 	}
 }
 
@@ -334,7 +334,7 @@ Address UnixSocket::getAddress()
 
 	if(res < 0)
 	{
-		throw "Error getting socket address/name.";
+		throw std::string("Error getting socket address/name.");
 	}
 
 	char buf[INET_ADDRSTRLEN];

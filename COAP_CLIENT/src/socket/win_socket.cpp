@@ -157,7 +157,7 @@ int WinSocket::receive(char* buf, int bufSize)
 	return bytesRecived;
 }
 
-int WinSocket::receiveFrom(char* buf, int bufSize, const Address& address)
+int WinSocket::receiveFrom(char* buf, int bufSize, Address& address)
 {
 	sockaddr_in srcAddr;
 	srcAddr.sin_family = AF_INET;

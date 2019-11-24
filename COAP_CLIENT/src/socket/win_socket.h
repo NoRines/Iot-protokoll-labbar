@@ -25,7 +25,7 @@ public:
 	int sendTo(const std::string& msg, const Address& address) override;
 
 	int receive(char* buf, int bufSize) override;
-	int receiveFrom(char* buf, int bufSize, const Address& address) override;
+	int receiveFrom(char* buf, int bufSize, Address& address) override;
 
 	void shutdown(SocketShutdownType type) override;
 	void close() override;

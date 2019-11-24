@@ -41,7 +41,7 @@ public:
 	virtual int sendTo(const std::string& msg, const Address& address) = 0;
 
 	virtual int receive(char* buf, int bufSize) = 0;
-	virtual int receiveFrom(char* buf, int bufSize, const Address& address) = 0;
+	virtual int receiveFrom(char* buf, int bufSize, Address& address) = 0;
 	
 	virtual void shutdown(SocketShutdownType type) = 0;
 	virtual void close() = 0;

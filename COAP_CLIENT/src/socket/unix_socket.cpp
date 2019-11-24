@@ -296,7 +296,7 @@ int UnixSocket::receive(char* buf, int bufSize)
 	return recvRes;
 }
 
-int UnixSocket::receiveFrom(char* buf, int bufSize, const Address& address)
+int UnixSocket::receiveFrom(char* buf, int bufSize, Address& address)
 {
 	sockaddr_in srcAddr;
 	srcAddr.sin_family = AF_INET;

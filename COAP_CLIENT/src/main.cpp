@@ -16,6 +16,8 @@ int main(int argc, char** argv)
 		char buf[4096];
 		Address address = {"0.0.0.0", 54000};
 
+		serverSocket->bind(address);
+
 		int bytesRecived = serverSocket->receiveFrom(buf, 4096, address);
 		
 		std::cout << address.host << " : " << address.port << std::endl;

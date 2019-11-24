@@ -9,7 +9,7 @@ struct addrinfo *result = NULL, *ptr = NULL, hints;
 
 int WinSocket::numSocketsActive = 0;
 
-static void WinSocket::initWsa()
+void WinSocket::initWsa()
 {
 	if(numSocketsActive == 0)
 	{
@@ -26,7 +26,7 @@ static void WinSocket::initWsa()
 	numSocketsActive++;
 }
 
-static void WinSocket::quitWsa()
+void WinSocket::quitWsa()
 {
 	if(numSocketsActive == 1)
 		WSACleanup();
@@ -135,7 +135,7 @@ int WinSocket::sendTo(const std::string& msg, const Address& address)
 	destAddr.sin_port = htons(address.port);
 	inet_pton(AF_INET, address.host.c_str(), &destAddr.sin_addr);
 
-	int bytesSent = ::sendto(s, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
+	int bytesSent = ::sendto(sock, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
 
 	if(bytesSent == SOCKET_ERROR)
 	{

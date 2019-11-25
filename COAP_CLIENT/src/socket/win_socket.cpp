@@ -7,6 +7,19 @@
 struct addrinfo *result = NULL, *ptr = NULL, hints;
 
 
+// Helper functions
+static toAddress(const sockaddr_in& hint)
+{
+	char buf[INET_ADDRSTRLEN];
+	memset(buf, 0, INET_ADDRSTRLEN);
+	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
+	return{ std::string(buf), ntohs(hint.sin_port) };
+}
+
+
+
+// Class implementation
+
 int WinSocket::numSocketsActive = 0;
 
 void WinSocket::initWsa()
@@ -172,6 +185,8 @@ int WinSocket::receiveFrom(char* buf, int bufSize, Address& address)
 		throw std::string("recvfrom failed with error %d\n", WSAGetLastError());
 	}
 
+	address = toAddress(srcAddr);
+
 	return bytesRecived;
 }
 
@@ -204,6 +219,7 @@ void WinSocket::close()
 	closesocket(sock);
 }
 
+
 Address WinSocket::getAddress()
 {
 	sockaddr_in hint;
@@ -215,11 +231,6 @@ Address WinSocket::getAddress()
 		throw std::string("Error getting address/name %d\n", WSAGetLastError());
 	}
 
-	char buf[INET_ADDRSTRLEN];
-	memset(buf, 0, INET_ADDRSTRLEN);
-
-	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
-
-	return{ std::string(buf), ntohs(hint.sin_port) };
+	return toAddress(hint);
 }
 #endif

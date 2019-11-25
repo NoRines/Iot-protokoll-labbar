@@ -13,6 +13,21 @@
 #include <string.h>
 #include <string>
 
+
+// Helper functions
+static Address toAddress(const sockaddr_in& hint)
+{
+	char buf[INET_ADDRSTRLEN];
+	memset(buf, 0, INET_ADDRSTRLEN);
+	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
+	return {std::string(buf), ntohs(hint.sin_port)};
+}
+
+
+
+
+// Class implementation
+
 UnixSocket::UnixSocket(int s) : SocketInterface(), sock(s)
 {
 }
@@ -311,6 +326,8 @@ int UnixSocket::receiveFrom(char* buf, int bufSize, Address& address)
 		throw std::string("Failed when receiving from an address");
 	}
 
+	address = toAddress(srcAddr);
+
 	return bytesRecived;
 }
 
@@ -360,6 +377,8 @@ void UnixSocket::close()
 	::close(sock);
 }
 
+
+
 Address UnixSocket::getAddress()
 {
 	sockaddr_in hint;
@@ -372,13 +391,7 @@ Address UnixSocket::getAddress()
 		throw std::string("Error getting socket address/name.");
 	}
 
-	char buf[INET_ADDRSTRLEN];
-	memset(buf, 0, INET_ADDRSTRLEN);
-
-//const char *inet_ntop(int af, const void *src, char *dst, socklen_t size);
-	::inet_ntop(AF_INET, &hint.sin_addr, buf, INET_ADDRSTRLEN);
-
-	return {std::string(buf), ntohs(hint.sin_port)};
+	return toAddress(hint);
 }
 
 #endif

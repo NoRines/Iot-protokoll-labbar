@@ -19,6 +19,9 @@ public:
 	void listen() override;
 	SocketInterface* accept() override;
 
+	int send(const char* msg, int msgSize) override;
+	int sendTo(const char* msg, int msgSize, const Address& address) override;
+
 	int send(const std::string& msg) override;
 	int sendTo(const std::string& msg, const Address& address) override;
 

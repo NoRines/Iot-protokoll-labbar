@@ -214,7 +214,7 @@ SocketInterface* UnixSocket::accept()
 	return new UnixSocket(clientSocket);
 }
 
-int UnixSocket::send(const std::string& msg)
+int UnixSocket::send(const char* msg, int msgSize)
 {
 	//	ssize_t send(int socket, const void* buffer, size_t length, int flags)
 	//
@@ -244,7 +244,7 @@ int UnixSocket::send(const std::string& msg)
 	//		error. 
 	//
 
-	int sendRes = ::send(sock, msg.c_str(), msg.size() + 1, 0);
+	int sendRes = ::send(sock, msg, msgSize, 0);
 
 	if(sendRes < 0)
 	{
@@ -254,14 +254,14 @@ int UnixSocket::send(const std::string& msg)
 	return sendRes;
 }
 
-int UnixSocket::sendTo(const std::string& msg, const Address& address)
+int UnixSocket::sendTo(const char* msg, int msgSize, const Address& address)
 {
 	sockaddr_in destAddr;
 	destAddr.sin_family = AF_INET;
 	destAddr.sin_port = htons(address.port);
 	inet_pton(AF_INET, address.host.c_str(), &destAddr.sin_addr);
 
-	int bytesSent = ::sendto(sock, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
+	int bytesSent = ::sendto(sock, msg, msgSize, 0, (sockaddr*)&destAddr, sizeof(destAddr));
 
 	if(bytesSent < 0)
 	{
@@ -269,6 +269,16 @@ int UnixSocket::sendTo(const std::string& msg, const Address& address)
 	}
 
 	return bytesSent;
+}
+
+int UnixSocket::send(const std::string& msg)
+{
+	return send(msg.c_str(), msg.size() + 1);
+}
+
+int UnixSocket::sendTo(const std::string& msg, const Address& address)
+{
+	return sendTo(msg.c_str(), msg.size() + 1, address);
 }
 
 int UnixSocket::receive(char* buf, int bufSize)

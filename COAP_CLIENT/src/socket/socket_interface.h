@@ -37,6 +37,9 @@ public:
 	virtual void listen() = 0;
 	virtual SocketInterface* accept() = 0;
 
+	virtual int send(const char* msg, int msgSize) = 0;
+	virtual int sendTo(const char* msg, int msgSize, const Address& address) = 0;
+
 	virtual int send(const std::string& msg) = 0;
 	virtual int sendTo(const std::string& msg, const Address& address) = 0;
 

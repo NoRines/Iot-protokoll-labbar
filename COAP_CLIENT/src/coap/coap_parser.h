@@ -17,25 +17,48 @@
 //   |1 1 1 1 1 1 1 1|    Payload (if any) ...
 //   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-struct CoapHeader
+
+namespace coap
+{
+
+struct Header
 {
 	uint8_t verTypeTokenLen;
 	uint8_t code;
 	uint16_t msgId;
 };
 
-struct CoapToken
+struct Token
 {
 	std::array<uint8_t, 8> bytes;
 	int numBytes;
 };
 
-class CoapParser
+class Parser
 {
+public:
+	Parser(const uint8_t* rawData, int numBytes);
+
 private:
-	CoapHeader header;
-	CoapToken token;
+	Header parseHeader(const uint8_t** rawData, int& numBytes);
+	Token parseToken(const uint8_t** rawData, int& numBytes);
+
+public:
+	uint8_t getVersion() const;
+	uint8_t getMessageType() const;
+	uint8_t getTokenLength() const;
+	uint8_t getMessageCode() const;
+	uint16_t getMessageId() const;
+
+	Token getToken() const;
+
+
+private:
+	Header header;
+	Token token;
 	OptionParser options;
 };
+
+}
 
 #endif

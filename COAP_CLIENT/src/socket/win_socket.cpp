@@ -8,7 +8,7 @@ struct addrinfo *result = NULL, *ptr = NULL, hints;
 
 
 // Helper functions
-static toAddress(const sockaddr_in& hint)
+static Address toAddress(sockaddr_in hint)
 {
 	char buf[INET_ADDRSTRLEN];
 	memset(buf, 0, INET_ADDRSTRLEN);
@@ -131,7 +131,17 @@ SocketInterface* WinSocket::accept()
 
 int WinSocket::send(const std::string& msg)
 {
-	int bytesSent = ::send(sock, msg.c_str(), msg.size() + 1, 0);
+	return send(msg.c_str(), msg.size() + 1);
+}
+
+int WinSocket::sendTo(const std::string& msg, const Address& address)
+{
+	return sendTo(msg.c_str(), msg.size() + 1, address);
+}
+
+int WinSocket::send(const char * msg, int msgSize)
+{
+	int bytesSent = ::send(sock, msg, msgSize, 0);
 
 	if (bytesSent == SOCKET_ERROR)
 	{
@@ -141,16 +151,16 @@ int WinSocket::send(const std::string& msg)
 	return bytesSent;
 }
 
-int WinSocket::sendTo(const std::string& msg, const Address& address)
+int WinSocket::sendTo(const char * msg, int msgSize, const Address & address)
 {
 	sockaddr_in destAddr;
 	destAddr.sin_family = AF_INET;
 	destAddr.sin_port = htons(address.port);
 	inet_pton(AF_INET, address.host.c_str(), &destAddr.sin_addr);
 
-	int bytesSent = ::sendto(sock, msg.c_str(), msg.size() + 1, 0, (sockaddr*)&destAddr, sizeof(destAddr));
+	int bytesSent = ::sendto(sock, msg, msgSize, 0, (sockaddr*)&destAddr, sizeof(destAddr));
 
-	if(bytesSent == SOCKET_ERROR)
+	if (bytesSent == SOCKET_ERROR)
 	{
 		throw std::string("sendto failed with error %d\n", WSAGetLastError());
 	}

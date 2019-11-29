@@ -2,6 +2,7 @@
 #define OPTION_PARSER_H
 
 #include <vector>
+#include <cstdint>
 
 //     0   1   2   3   4   5   6   7
 //   +---------------+---------------+
@@ -38,8 +39,17 @@ struct Option
 
 class OptionParser
 {
+public:
+	OptionParser(const uint8_t* rawData, int numBytes);
+
+	int getBytesInOptions() const;
+	int getNumOptions() const;
+
 private:
+	Option parseOption(const uint8_t** rawData, int& numBytes);
+
 	std::vector<Option> options;
+	int bytesInOptions;
 };
 
 }

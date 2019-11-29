@@ -42,6 +42,7 @@ public:
 private:
 	Header parseHeader(const uint8_t** rawData, int& numBytes);
 	Token parseToken(const uint8_t** rawData, int& numBytes);
+	OptionParser parseOptions(const uint8_t** rawData, int& numBytes);
 
 public:
 	uint8_t getVersion() const;
@@ -52,6 +53,7 @@ public:
 
 	Token getToken() const;
 
+	int getNumOptions() const;
 
 private:
 	Header header;

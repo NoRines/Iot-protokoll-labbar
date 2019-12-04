@@ -10,7 +10,8 @@ namespace coap
 Parser::Parser(const uint8_t* rawData, int numBytes) :
 	header(parseHeader(&rawData, numBytes)),
 	token(parseToken(&rawData, numBytes)),
-	options(parseOptions(&rawData, numBytes))
+	options(parseOptions(&rawData, numBytes)),
+	payload(parsePayload(&rawData, numBytes))
 {
 }
 
@@ -60,6 +61,22 @@ OptionParser Parser::parseOptions(const uint8_t** rawData, int& numBytes)
 	return o;
 }
 
+std::vector<uint8_t> Parser::parsePayload(const uint8_t** rawData, int& numBytes)
+{
+	std::vector<uint8_t> res;
+	res.reserve(numBytes);
+
+	while(numBytes > 0)
+	{
+		uint8_t b = IT_BYTE(rawData);
+		if(b != 0xFF)
+			res.push_back(b);
+		numBytes--;
+	}
+
+	return res;
+}
+
 uint8_t Parser::getVersion() const
 {
 	return header.verTypeTokenLen & 0b11000000;
@@ -93,6 +110,16 @@ Token Parser::getToken() const
 int Parser::getNumOptions() const
 {
 	return options.getNumOptions();
+}
+
+const Option& Parser::getOption(int n) const
+{
+	return options.getOption(n);
+}
+
+const std::vector<uint8_t>& Parser::getPayload() const
+{
+	return payload;
 }
 
 }

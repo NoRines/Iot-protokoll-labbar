@@ -32,6 +32,7 @@ namespace coap
 
 struct Option
 {
+	int type;
 	uint16_t delta;
 	uint16_t length;
 	std::vector<uint8_t> values;
@@ -44,6 +45,8 @@ public:
 
 	int getBytesInOptions() const;
 	int getNumOptions() const;
+
+	const Option& getOption(int n) const;
 
 private:
 	Option parseOption(const uint8_t** rawData, int& numBytes);

@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <array>
+#include <vector>
 #include "option_parser.h"
 
 //    0                   1                   2                   3
@@ -43,6 +44,7 @@ private:
 	Header parseHeader(const uint8_t** rawData, int& numBytes);
 	Token parseToken(const uint8_t** rawData, int& numBytes);
 	OptionParser parseOptions(const uint8_t** rawData, int& numBytes);
+	std::vector<uint8_t> parsePayload(const uint8_t** rawData, int& numBytes);
 
 public:
 	uint8_t getVersion() const;
@@ -54,11 +56,15 @@ public:
 	Token getToken() const;
 
 	int getNumOptions() const;
+	const Option& getOption(int n) const;
+
+	const std::vector<uint8_t>& getPayload() const;
 
 private:
 	Header header;
 	Token token;
 	OptionParser options;
+	std::vector<uint8_t> payload;
 };
 
 }

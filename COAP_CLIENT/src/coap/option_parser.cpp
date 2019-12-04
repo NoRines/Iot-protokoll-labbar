@@ -12,7 +12,14 @@ OptionParser::OptionParser(const uint8_t* rawData, int numBytes)
 	int bytesAtStart = numBytes;
 
 	while(rawData[0] != 0xff)
+	{
+		int oldType = 0;
+		if(!options.empty())
+			oldType = options.back().type;
+
 		options.push_back(parseOption(&rawData, numBytes));
+		options.back().type = options.back().delta + oldType;
+	}
 
 	bytesInOptions = bytesAtStart - numBytes;
 }
@@ -25,6 +32,11 @@ int OptionParser::getBytesInOptions() const
 int OptionParser::getNumOptions() const
 {
 	return options.size();
+}
+
+const Option& OptionParser::getOption(int n) const
+{
+	return options[n];
 }
 
 Option OptionParser::parseOption(const uint8_t** rawData, int& numBytes)
@@ -65,7 +77,7 @@ Option OptionParser::parseOption(const uint8_t** rawData, int& numBytes)
 		values.push_back(IT_BYTE(rawData));
 		numBytes--;
 	}
-	return {delta, length, values};
+	return {0, delta, length, values};
 }
 
 }

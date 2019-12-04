@@ -10,6 +10,54 @@
 #include "coap/coap_parser.h"
 #include "coap/option_parser.h"
 
+void handleResponse(const char* msg, int size)
+{
+	coap::Parser coapMessage((uint8_t*)msg, size);
+
+	int numOptions = coapMessage.getNumOptions();
+
+	for(int i = 0; i < numOptions; i++)
+	{
+		const auto& op = coapMessage.getOption(i);
+
+		if(op.type == 12)
+		{
+			std::cout << "Content-Format option received" << std::endl;
+			std::cout << "Bytes in option: " << op.length << std::endl;
+
+			uint8_t coapValue = op.values[0];
+			switch(coapValue)
+			{
+				case 0:
+					std::cout << "Data is text/plain" << std::endl;
+					break;
+				case 40:
+					std::cout << "application/link-format" << std::endl;
+					break;
+				case 41:
+					std::cout << "application/xml" << std::endl;
+					break;
+				case 42:
+					std::cout << "application/octet-stream" << std::endl;
+					break;
+				case 47:
+					std::cout << "application/exi" << std::endl;
+					break;
+				case 50:
+					std::cout << "application/json" << std::endl;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	const auto& payload = coapMessage.getPayload();
+
+	std::cout << "Bytes in payload: " << payload.size() << std::endl;
+	std::cout << std::string((char*)payload.data(), payload.size()) << std::endl;
+}
+
 int main(int argc, char** argv)
 {
 	try
@@ -47,9 +95,7 @@ int main(int argc, char** argv)
 		std::cout << "Raw message: " << std::endl;
 		std::cout << std::string(buf, 0, bytesReceived) << std::endl;
 
-		coap::Parser test((uint8_t*)buf, bytesReceived);
-
-		std::cout << test.getNumOptions() << " options received" << std::endl;
+		handleResponse(buf, bytesReceived);
 	}
 	catch(std::string error)
 	{

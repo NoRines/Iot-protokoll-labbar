@@ -243,13 +243,17 @@ std::vector<uint8_t> mk_delete(std::string uri)
 std::vector<uint8_t> mk_get(std::string uri)
 {
 	uint16_t msgId = getMessageId();
-	std::vector<uint8_t> msg{0b01010000, 0b00000001, (uint8_t)msgId >> 8, (uint8_t)msgId};
+	std::vector<uint8_t> msg{0b01010000, 0b00000001, (uint8_t)(msgId >> 8), (uint8_t)msgId};
 
+	add_uri_to_option(msg, uri);
 
+	return msg;
 }
 
 int main(int argc, char** argv)
 {
+	constexpr int UDP_MAX_SIZE = 65507;
+
 	std::srand(std::time(NULL)); // Seeda rand
 	gMessageId = std::rand();
 
@@ -261,37 +265,25 @@ int main(int argc, char** argv)
 		// Create the socket
 		std::unique_ptr<SocketInterface> socket = std::make_unique<Socket>(SocketType::DGRAM);
 
-		// Very simple GET message
-		uint8_t simpleGet[] = { 0b01011000, 0b00000001, 0b10101010, 0b10101010,
-			200,
-			201,
-			202,
-			203,
-			204,
-			205,
-			206,
-			207};
 		std::string uri = "sink";
-		//uint8_t simplePost[] = { 0b01010100, 0b00000010, 0b10101010, 0b10101010 ,0b10101010, 0b10101010, 0b10101010, 0b10101010,0b10110100, uri[0],uri[1], uri[2], uri[3] };
 		std::vector<uint8_t> post_msg = mk_post(uri);
 		std::vector<uint8_t> put_msg = mk_put(uri,"big hello");
-		//std::vector<uint8_t> put_msg = mk_put(uri, "big hello");
-		// Send the simple get to coap.me
+
 		std::cout << "Sending request..." << std::endl;
-		//int bytesSent = socket->sendTo((char*)simpleGet, 12, {"134.102.218.18", 5683});
+
 		int bytesSent = socket->sendTo((char*)post_msg.data(), post_msg.size(), { "134.102.218.18", 5683 });
 		std::cout << bytesSent << " bytes sent" << std::endl << std::endl;
 
+		// Set up recive buffer
+		char buf[UDP_MAX_SIZE];
+		memset(buf, 0, UDP_MAX_SIZE);
+
 		// Wait for the response
 		std::cout << "Waiting for response..." << std::endl;
-		char buf[4096];
-		memset(buf, 0, 4096);
-		Address receiveAddr = {"134.102.218.18", 5683};
-		int bytesReceived = socket->receiveFrom(buf, 4096, receiveAddr);
-		std::cout << bytesReceived << " bytes received" << std::endl << std::endl;
 
-		//std::cout << "Raw message: " << std::endl;
-		//std::cout << std::string(buf, 0, bytesReceived) << std::endl;
+		Address receiveAddr = {"134.102.218.18", 5683};
+		int bytesReceived = socket->receiveFrom(buf, UDP_MAX_SIZE, receiveAddr);
+		std::cout << bytesReceived << " bytes received" << std::endl << std::endl;
 
 		handleResponse(buf, bytesReceived);
 	}

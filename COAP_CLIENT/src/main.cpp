@@ -1,4 +1,4 @@
-#include "socket/socket.h"
+#include "socket.h"
 #include <memory>
 #include <thread>
 #include <iostream>
@@ -7,8 +7,8 @@
 
 #include <cstdint>
 
-#include "coap/coap_parser.h"
-#include "coap/option_parser.h"
+#include "coap_parser.h"
+#include "option_parser.h"
 
 void handleResponse(const char* msg, int size)
 {
@@ -24,30 +24,32 @@ void handleResponse(const char* msg, int size)
 		{
 			std::cout << "Content-Format option received" << std::endl;
 			std::cout << "Bytes in option: " << op.length << std::endl;
-
-			uint8_t coapValue = op.values[0];
-			switch(coapValue)
-			{
-				case 0:
-					std::cout << "Data is text/plain" << std::endl;
-					break;
-				case 40:
-					std::cout << "application/link-format" << std::endl;
-					break;
-				case 41:
-					std::cout << "application/xml" << std::endl;
-					break;
-				case 42:
-					std::cout << "application/octet-stream" << std::endl;
-					break;
-				case 47:
-					std::cout << "application/exi" << std::endl;
-					break;
-				case 50:
-					std::cout << "application/json" << std::endl;
-					break;
-				default:
-					break;
+			if(op.length != 0)
+			{ 
+				uint8_t coapValue = op.values[0];
+				switch(coapValue)
+				{
+					case 0:
+						std::cout << "Data is text/plain" << std::endl;
+						break;
+					case 40:
+						std::cout << "application/link-format" << std::endl;
+						break;
+					case 41:
+						std::cout << "application/xml" << std::endl;
+						break;
+					case 42:
+						std::cout << "application/octet-stream" << std::endl;
+						break;
+					case 47:
+						std::cout << "application/exi" << std::endl;
+						break;
+					case 50:
+						std::cout << "application/json" << std::endl;
+						break;
+					default:
+						break;
+				}
 			}
 		}
 	}
@@ -56,6 +58,95 @@ void handleResponse(const char* msg, int size)
 
 	std::cout << "Bytes in payload: " << payload.size() << std::endl;
 	std::cout << std::string((char*)payload.data(), payload.size()) << std::endl;
+}
+std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
+{
+	std::vector<uint8_t> msg{ 0b01010100, 0b00000010, 0b10101010, 0b10101010, 
+							  0b10101010, 0b10101010, 0b10101010, 0b10101010 };
+	//uint8_t top_header[] = { 0b01010100, 0b00000010, 0b10101010, 0b10101010 };//version token type and method, msgid tokenlen =4
+	//uint8_t token[] = { 0b10101010, 0b10101010, 0b10101010, 0b10101010 }; //token
+	if (uri.size() <= 12) //kan använda vanlig option
+	{
+		uint8_t options = 0b10110000;
+		options += uri.size();
+		msg.push_back(options);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		return msg;
+	}
+	else if (uri.size()<=255) //om uri är för lång måste extended användas
+	{
+		uint8_t options = 0b10110000;
+		options += 13;
+		msg.push_back(options);
+		uint8_t extended_option_length=	uri.size()-13;
+		msg.push_back(extended_option_length);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		return msg;
+	}
+	else if (uri.size() > 255)
+	{
+		uint8_t options = 0b10110000;
+		options += 14;
+		msg.push_back(options);
+		uint16_t extended_option_length = uri.size() - 269;
+		uint8_t small_end = extended_option_length;
+		uint8_t big_end = extended_option_length >> 8;
+		msg.push_back(options);
+		msg.push_back(small_end);
+		msg.push_back(big_end);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		return msg;
+	}
+	else
+	{
+		std::cout << "something wrong" << std::endl;
+		
+	}
+	return msg;
+}
+
+
+std::vector<uint8_t> mk_put(std::string uri,std::string payload) 
+{
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, 0b10101010, 0b10101010};
+	if (uri.size() <= 12) //kan använda vanlig option
+	{
+		uint8_t options = 0b10110000;
+		options += uri.size();
+		msg.push_back(options);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		uint8_t option_content_format = 0b00010000;
+		msg.push_back(option_content_format);
+		msg.push_back(0xff);
+		for (auto p : payload)
+		{
+			msg.push_back((uint8_t)p);
+		}
+
+	}
+	else
+	{
+
+	}
+
+	return msg;
+}
+
+std::vector<uint8_t> mk_delete(std::string uri)
+{
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, 0b10101010, 0b10101010 };
 }
 
 int main(int argc, char** argv)
@@ -78,10 +169,14 @@ int main(int argc, char** argv)
 			205,
 			206,
 			207};
-
+		std::string uri = "sink";
+		//uint8_t simplePost[] = { 0b01010100, 0b00000010, 0b10101010, 0b10101010 ,0b10101010, 0b10101010, 0b10101010, 0b10101010,0b10110100, uri[0],uri[1], uri[2], uri[3] };
+		std::vector<uint8_t> post_msg = mk_post(uri);
+		std::vector<uint8_t> put_msg = mk_put(uri,"big hello");
 		// Send the simple get to coap.me
 		std::cout << "Sending GET..." << std::endl;
-		int bytesSent = socket->sendTo((char*)simpleGet, 12, {"134.102.218.18", 5683});
+		//int bytesSent = socket->sendTo((char*)simpleGet, 12, {"134.102.218.18", 5683});
+		int bytesSent = socket->sendTo((char*)post_msg.data(), post_msg.size(), { "134.102.218.18", 5683 });
 		std::cout << bytesSent << " bytes sent" << std::endl << std::endl;
 
 		// Wait for the response
@@ -102,5 +197,6 @@ int main(int argc, char** argv)
 		std::cout << error << std::endl;
 		return 1;
 	}
+	system("pause");
 	return 0;
 }

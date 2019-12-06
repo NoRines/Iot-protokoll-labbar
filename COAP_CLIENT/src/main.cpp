@@ -110,8 +110,8 @@ void add_uri_to_option(std::vector<uint8_t>&msg, std::string uri)
 }
 std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
 {
-	std::vector<uint8_t> msg{ 0b01010100, 0b00000010, 0b10101010, 0b10101010, 
-							  0b10101010, 0b10101010, 0b10101010, 0b10101010 };
+	uint16_t msgId = getMessageId();
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000010, (uint8_t)(msgId >> 8), (uint8_t)msgId};
 	add_uri_to_option(msg, uri);
 	return msg;
 }
@@ -119,7 +119,8 @@ std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
 
 std::vector<uint8_t> mk_put(std::string uri,std::string payload) 
 {
-	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, 0b10101010, 0b10101010};
+	uint16_t msgId = getMessageId();
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, (uint8_t)(msgId >> 8), (uint8_t)msgId};
 	add_uri_to_option(msg, uri);
 	uint8_t option_content_format = 0b00010000;
 	msg.push_back(option_content_format);
@@ -133,7 +134,8 @@ std::vector<uint8_t> mk_put(std::string uri,std::string payload)
 
 std::vector<uint8_t> mk_delete(std::string uri)
 {
-	std::vector<uint8_t> msg{ 0b01010000, 0b00000100, 0b10101010, 0b10101010 };
+	uint16_t msgId = getMessageId();
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000100, (uint8_t)(msgId >> 8), (uint8_t)msgId};
 	add_uri_to_option(msg, uri);
 	return msg;
 }
@@ -157,36 +159,91 @@ int main(int argc, char** argv)
 
 	try
 	{
-		// Test server is coap.me the which has ip-address: 134.102.218.18
-
-
 		// Create the socket
 		std::unique_ptr<SocketInterface> socket = std::make_unique<Socket>(SocketType::DGRAM);
 
-		std::string uri = "sink";
-		std::vector<uint8_t> post_msg = mk_post(uri);
-
-		//std::vector<uint8_t> put_msg = mk_put(uri,"big hello");
-		std::vector<uint8_t> delete_msg = mk_delete(uri);
-		// Send the simple get to coap.me
-		std::cout << "Sending request..." << std::endl;
-		//int bytesSent = socket->sendTo((char*)simpleGet, 12, {"134.102.218.18", 5683});
-		int bytesSent = socket->sendTo((char*)delete_msg.data(), delete_msg.size(), { "134.102.218.18", 5683 });
-
-		std::cout << bytesSent << " bytes sent" << std::endl << std::endl;
-
 		// Set up recive buffer
 		char buf[UDP_MAX_SIZE];
-		memset(buf, 0, UDP_MAX_SIZE);
 
-		// Wait for the response
-		std::cout << "Waiting for response..." << std::endl;
 
 		Address receiveAddr = {"134.102.218.18", 5683};
-		int bytesReceived = socket->receiveFrom(buf, UDP_MAX_SIZE, receiveAddr);
-		std::cout << bytesReceived << " bytes received" << std::endl << std::endl;
+		char input;
 
-		handleResponse(buf, bytesReceived);
+		do
+		{
+			memset(buf, 0, UDP_MAX_SIZE);
+			std::vector<uint8_t> msg;
+
+			std::cout << "Välj en av följande: " << std::endl;
+			std::cout << "\tg för GET." << std::endl;
+			std::cout << "\to för POST." << std::endl;
+			std::cout << "\tu för PUT." << std::endl;
+			std::cout << "\td för DELETE." << std::endl;
+			std::cout << "\tq för att avsluta." << std::endl;
+
+			std::cin >> input;
+
+			switch(input)
+			{
+				case 'g':
+				{
+					std::cout << "Skriv uri utan snestreck: ";
+					std::string uri;
+					std::cin >> uri;
+
+					msg = mk_get(uri);
+				} break;
+
+				case 'o':
+				{
+					std::cout << "Skriv uri utan snestreck: ";
+					std::string uri;
+					std::cin >> uri;
+
+					msg = mk_post(uri);
+				} break;
+
+				case 'u':
+				{
+					std::cout << "Skriv uri utan snestreck: ";
+					std::string uri;
+					std::cin >> uri;
+					std::cout << "Skriv vad du vill skicka: ";
+					std::string payload;
+					std::getline(std::cin, payload);
+					std::getline(std::cin, payload);
+
+					msg = mk_put(uri, payload);
+				} break;
+
+				case 'd':
+				{
+					std::cout << "Skriv uri utan snestreck: ";
+					std::string uri;
+					std::cin >> uri;
+
+					msg = mk_delete(uri);
+				} break;
+			}
+		
+			if(input != 'q')
+			{
+				int bytesSent = socket->sendTo((char*)msg.data(), msg.size(), { "134.102.218.18", 5683 });
+				std::cout << bytesSent << " bytes skickat" << std::endl << std::endl;
+
+
+				std::cout << "Väntar på svar..." << std::endl;
+
+				int bytesReceived = socket->receiveFrom(buf, UDP_MAX_SIZE, receiveAddr);
+				std::cout << bytesReceived << " bytes mottagna" << std::endl << std::endl;
+
+				handleResponse(buf, bytesReceived);
+				std::cout << std::endl;
+				std::cout << "-----------------------------------------------------" << std::endl;
+				std::cout << std::endl;
+			}
+
+		} while(input != 'q');
 	}
 	catch(std::string error)
 	{

@@ -59,12 +59,8 @@ void handleResponse(const char* msg, int size)
 	std::cout << "Bytes in payload: " << payload.size() << std::endl;
 	std::cout << std::string((char*)payload.data(), payload.size()) << std::endl;
 }
-std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
+void add_uri_to_option(std::vector<uint8_t>&msg, std::string uri)
 {
-	std::vector<uint8_t> msg{ 0b01010100, 0b00000010, 0b10101010, 0b10101010, 
-							  0b10101010, 0b10101010, 0b10101010, 0b10101010 };
-	//uint8_t top_header[] = { 0b01010100, 0b00000010, 0b10101010, 0b10101010 };//version token type and method, msgid tokenlen =4
-	//uint8_t token[] = { 0b10101010, 0b10101010, 0b10101010, 0b10101010 }; //token
 	if (uri.size() <= 12) //kan använda vanlig option
 	{
 		uint8_t options = 0b10110000;
@@ -74,20 +70,18 @@ std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
 		{
 			msg.push_back((uint8_t)l);
 		}
-		return msg;
 	}
-	else if (uri.size()<=255) //om uri är för lång måste extended användas
+	else if (uri.size() <= 255) //om uri är för lång måste extended användas
 	{
 		uint8_t options = 0b10110000;
 		options += 13;
 		msg.push_back(options);
-		uint8_t extended_option_length=	uri.size()-13;
+		uint8_t extended_option_length = uri.size() - 13;
 		msg.push_back(extended_option_length);
 		for (auto l : uri)
 		{
 			msg.push_back((uint8_t)l);
 		}
-		return msg;
 	}
 	else if (uri.size() > 255)
 	{
@@ -104,13 +98,13 @@ std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
 		{
 			msg.push_back((uint8_t)l);
 		}
-		return msg;
 	}
-	else
-	{
-		std::cout << "something wrong" << std::endl;
-		
-	}
+}
+std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
+{
+	std::vector<uint8_t> msg{ 0b01010100, 0b00000010, 0b10101010, 0b10101010, 
+							  0b10101010, 0b10101010, 0b10101010, 0b10101010 };
+	add_uri_to_option(msg, uri);
 	return msg;
 }
 
@@ -136,9 +130,53 @@ std::vector<uint8_t> mk_put(std::string uri,std::string payload)
 		}
 
 	}
+	else if (uri.size() <= 255) //om uri är för lång måste extended användas
+	{
+		uint8_t options = 0b10110000;
+		options += 13;
+		msg.push_back(options);
+		uint8_t extended_option_length = uri.size() - 13;
+		msg.push_back(extended_option_length);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		uint8_t option_content_format = 0b00010000;
+		msg.push_back(option_content_format);
+		msg.push_back(0xff);
+		for (auto p : payload)
+		{
+			msg.push_back((uint8_t)p);
+		}
+		return msg;
+	}
+	else if (uri.size() > 255)
+	{
+		uint8_t options = 0b10110000;
+		options += 14;
+		msg.push_back(options);
+		uint16_t extended_option_length = uri.size() - 269;
+		uint8_t small_end = extended_option_length;
+		uint8_t big_end = extended_option_length >> 8;
+		msg.push_back(options);
+		msg.push_back(small_end);
+		msg.push_back(big_end);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		uint8_t option_content_format = 0b00010000;
+		msg.push_back(option_content_format);
+		msg.push_back(0xff);
+		for (auto p : payload)
+		{
+			msg.push_back((uint8_t)p);
+		}
+		return msg;
+	}
 	else
 	{
-
+		std::cout << "something truly wrong here" << std::endl;
 	}
 
 	return msg;
@@ -146,7 +184,51 @@ std::vector<uint8_t> mk_put(std::string uri,std::string payload)
 
 std::vector<uint8_t> mk_delete(std::string uri)
 {
-	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, 0b10101010, 0b10101010 };
+	std::vector<uint8_t> msg{ 0b01010000, 0b00000100, 0b10101010, 0b10101010 };
+	if (uri.size() <= 12) //kan använda vanlig option
+	{
+		uint8_t options = 0b10110000;
+		options += uri.size();
+		msg.push_back(options);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+	}
+	else if (uri.size() <= 255)
+	{
+		uint8_t options = 0b10110000;
+		options += 13;
+		msg.push_back(options);
+		uint8_t extended_option_length = uri.size() - 13;
+		msg.push_back(extended_option_length);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+		uint8_t option_content_format = 0b00010000;
+		msg.push_back(option_content_format);
+	}
+	else if (uri.size() > 255)
+	{
+		uint8_t options = 0b10110000;
+		options += 14;
+		msg.push_back(options);
+		uint16_t extended_option_length = uri.size() - 269;
+		uint8_t small_end = extended_option_length;
+		uint8_t big_end = extended_option_length >> 8;
+		msg.push_back(options);
+		msg.push_back(small_end);
+		msg.push_back(big_end);
+		for (auto l : uri)
+		{
+			msg.push_back((uint8_t)l);
+		}
+	}
+	else
+		std::cout << "Incorrect delete construction" << std::endl;
+
+	return msg;
 }
 
 int main(int argc, char** argv)
@@ -173,8 +255,9 @@ int main(int argc, char** argv)
 		//uint8_t simplePost[] = { 0b01010100, 0b00000010, 0b10101010, 0b10101010 ,0b10101010, 0b10101010, 0b10101010, 0b10101010,0b10110100, uri[0],uri[1], uri[2], uri[3] };
 		std::vector<uint8_t> post_msg = mk_post(uri);
 		std::vector<uint8_t> put_msg = mk_put(uri,"big hello");
+		//std::vector<uint8_t> put_msg = mk_put(uri, "big hello");
 		// Send the simple get to coap.me
-		std::cout << "Sending GET..." << std::endl;
+		std::cout << "Sending request..." << std::endl;
 		//int bytesSent = socket->sendTo((char*)simpleGet, 12, {"134.102.218.18", 5683});
 		int bytesSent = socket->sendTo((char*)post_msg.data(), post_msg.size(), { "134.102.218.18", 5683 });
 		std::cout << bytesSent << " bytes sent" << std::endl << std::endl;
@@ -187,8 +270,8 @@ int main(int argc, char** argv)
 		int bytesReceived = socket->receiveFrom(buf, 4096, receiveAddr);
 		std::cout << bytesReceived << " bytes received" << std::endl << std::endl;
 
-		std::cout << "Raw message: " << std::endl;
-		std::cout << std::string(buf, 0, bytesReceived) << std::endl;
+		//std::cout << "Raw message: " << std::endl;
+		//std::cout << std::string(buf, 0, bytesReceived) << std::endl;
 
 		handleResponse(buf, bytesReceived);
 	}

@@ -1,4 +1,4 @@
-#include "socket.h"
+#include "socket/socket.h"
 #include <memory>
 #include <thread>
 #include <iostream>
@@ -6,9 +6,18 @@
 #include <cstring>
 
 #include <cstdint>
+#include <cstdlib>
+#include <ctime>
 
-#include "coap_parser.h"
-#include "option_parser.h"
+#include "coap/coap_parser.h"
+#include "coap/option_parser.h"
+
+static uint16_t gMessageId = 0;
+
+uint16_t getMessageId()
+{
+	return gMessageId++;
+}
 
 void handleResponse(const char* msg, int size)
 {
@@ -149,8 +158,19 @@ std::vector<uint8_t> mk_delete(std::string uri)
 	std::vector<uint8_t> msg{ 0b01010000, 0b00000011, 0b10101010, 0b10101010 };
 }
 
+std::vector<uint8_t> mk_get(std::string uri)
+{
+	uint16_t msgId = getMessageId();
+	std::vector<uint8_t> msg{0b01010000, 0b00000001, (uint8_t)msgId >> 8, (uint8_t)msgId};
+
+
+}
+
 int main(int argc, char** argv)
 {
+	std::srand(std::time(NULL)); // Seeda rand
+	gMessageId = std::rand();
+
 	try
 	{
 		// Test server is coap.me the which has ip-address: 134.102.218.18
@@ -187,8 +207,8 @@ int main(int argc, char** argv)
 		int bytesReceived = socket->receiveFrom(buf, 4096, receiveAddr);
 		std::cout << bytesReceived << " bytes received" << std::endl << std::endl;
 
-		std::cout << "Raw message: " << std::endl;
-		std::cout << std::string(buf, 0, bytesReceived) << std::endl;
+		//std::cout << "Raw message: " << std::endl;
+		//std::cout << std::string(buf, 0, bytesReceived) << std::endl;
 
 		handleResponse(buf, bytesReceived);
 	}
@@ -197,6 +217,5 @@ int main(int argc, char** argv)
 		std::cout << error << std::endl;
 		return 1;
 	}
-	system("pause");
 	return 0;
 }

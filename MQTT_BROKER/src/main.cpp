@@ -67,27 +67,8 @@ bool testTestMqtt(uint8_t currentByte, MqttParseData& parseData)
 	return true;
 }
 
-void testMQTT(uint8_t* msg) // TODO(markus): Refactor this maybe to a class or something.
+void printControlValue(uint8_t control)
 {
-	// Save byte [1]
-	uint8_t control = (*msg) >> 4;
-	uint8_t flags = *msg++ | 0x0F;
-
-	int bytesInLength = 0;
-	std::array<uint8_t, 4> lengthBytes;
-
-
-	// Save the variable length bytes [2, 3(op), 4(op), 5(op)]
-	lengthBytes[bytesInLength++] = *msg++;
-	while(bytesInLength < 4 && (lengthBytes[bytesInLength-1] & 0x80) != 0)
-		lengthBytes[bytesInLength++] = *msg++;
-
-	// Convert the length bytes to a value
-	uint32_t length = 0;
-	for(int i = 0; i < bytesInLength; i++)
-		length |= (lengthBytes[i] & 0x7f) << (7*i);
-
-	// Switch for all possible values of the control bits
 	switch(control)
 	{
 		case 0:
@@ -157,16 +138,24 @@ void testMQTT(uint8_t* msg) // TODO(markus): Refactor this maybe to a class or s
 		default:
 			break;
 	}
+}
 
-	std::cout << std::endl << "Bytes in variable length: ";
-	for(int i = 0; i < bytesInLength; i++)
+void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& parseData)
+{
+	bool continueParsing = true;
+	do
 	{
-		std::cout << (int)lengthBytes[i] << " ";
-	}
-	std::cout << std::endl;
-	std::cout << bytesInLength << " bytes in length" << std::endl;
+		memset(buf, 0, bufSize);
+		int bytesParsed = 0;
+		int bytesReceived = sock->receive(buf, bufSize);
 
-	std::cout << std::endl << "Length value: " << length << std::endl;
+		while(continueParsing)
+		{
+			continueParsing = testTestMqtt(buf[bytesParsed++], parseData);
+			if(bytesParsed >= bytesReceived)
+				break;
+		}
+	} while(continueParsing);
 }
 
 void connHandler(SocketInterface* sock)
@@ -177,26 +166,14 @@ void connHandler(SocketInterface* sock)
 
 	std::cout << clientAddress.host << " : " << clientAddress.port << std::endl;
 
-	constexpr int bufLen = 1024;
-	char buf[bufLen];
+	constexpr int bufSize = 1;
+	char buf[bufSize];
 
-	int bytesParsed = 0;
 	MqttParseData parseData;
 
-	bool continueParsing = true;
-	do
-	{
-		memset(buf, 0, bufLen);
-		int bytesReceived = clientSock->receive(buf, bufLen);
-
-		while(continueParsing)
-		{
-			continueParsing = testTestMqtt(buf[bytesParsed++], parseData);
-		}
-	} while(continueParsing);
-
-
-	std::cout << "Message Type: " << (int)parseData.control << std::endl;
+	getMessage(clientSock.get(), buf, bufSize, parseData);
+	
+	printControlValue(parseData.control);
 	std::cout << "Message Length: " << parseData.messageLength << std::endl;
 
 	clientSock->shutdown(SocketShutdownType::RDWR);

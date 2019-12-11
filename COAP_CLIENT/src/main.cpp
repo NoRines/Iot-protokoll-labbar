@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
-
 #include "coap/coap_parser.h"
 #include "coap/option_parser.h"
 
@@ -23,7 +22,9 @@ void handleResponse(const char* msg, int size)
 	coap::Parser coapMessage((uint8_t*)msg, size);
 
 	int numOptions = coapMessage.getNumOptions();
-
+	uint8_t code = msg[1];
+	uint8_t codeclass = code>>5;
+	std::cout <<"CODE: "<< (int)codeclass <<'.'<< (code & 0b00010000) <<(code&0b00001111)<< std::endl;
 	for(int i = 0; i < numOptions; i++)
 	{
 		const auto& op = coapMessage.getOption(i);
@@ -152,6 +153,7 @@ std::vector<uint8_t> mk_get(std::string uri)
 
 int main(int argc, char** argv)
 {
+	
 	constexpr int UDP_MAX_SIZE = 65507;
 
 	std::srand(std::time(NULL)); // Seeda rand

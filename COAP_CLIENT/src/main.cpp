@@ -23,8 +23,8 @@ void handleResponse(const char* msg, int size)
 
 	int numOptions = coapMessage.getNumOptions();
 	uint8_t code = msg[1];
-	uint8_t codeclass = code&0b1110000;
-	std::cout <<"CODE: "<< (codeclass>>5 )<<'.'<< (code & 0b00010000) <<(code&0b00001111)<< std::endl;
+	uint8_t codeclass = code>>5;
+	std::cout <<"CODE: "<< (int)codeclass <<'.'<< (code & 0b00010000) <<(code&0b00001111)<< std::endl;
 	for(int i = 0; i < numOptions; i++)
 	{
 		const auto& op = coapMessage.getOption(i);
@@ -70,7 +70,7 @@ void handleResponse(const char* msg, int size)
 }
 void add_uri_to_option(std::vector<uint8_t>&msg, std::string uri)
 {
-	if (uri.size() <= 12) //kan anvï¿½nda vanlig option
+	if (uri.size() <= 12) //kan använda vanlig option
 	{
 		uint8_t options = 0b10110000;
 		options += uri.size();
@@ -80,7 +80,7 @@ void add_uri_to_option(std::vector<uint8_t>&msg, std::string uri)
 			msg.push_back((uint8_t)l);
 		}
 	}
-	else if (uri.size() <= 255) //om uri ï¿½r fï¿½r lï¿½ng mï¿½ste extended anvï¿½ndas
+	else if (uri.size() <= 255) //om uri är för lång måste extended användas
 	{
 		uint8_t options = 0b10110000;
 		options += 13;
@@ -109,7 +109,7 @@ void add_uri_to_option(std::vector<uint8_t>&msg, std::string uri)
 		}
 	}
 }
-std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa fï¿½r lï¿½nga uri-er
+std::vector<uint8_t> mk_post(std::string uri) //TODO: fixa för långa uri-er
 {
 	uint16_t msgId = getMessageId();
 	std::vector<uint8_t> msg{ 0b01010000, 0b00000010, (uint8_t)(msgId >> 8), (uint8_t)msgId};
@@ -176,12 +176,12 @@ int main(int argc, char** argv)
 			memset(buf, 0, UDP_MAX_SIZE);
 			std::vector<uint8_t> msg;
 
-			std::cout << "Vï¿½lj en av fï¿½ljande: " << std::endl;
-			std::cout << "\tg fï¿½r GET." << std::endl;
-			std::cout << "\to fï¿½r POST." << std::endl;
-			std::cout << "\tu fï¿½r PUT." << std::endl;
-			std::cout << "\td fï¿½r DELETE." << std::endl;
-			std::cout << "\tq fï¿½r att avsluta." << std::endl;
+			std::cout << "Välj en av följande: " << std::endl;
+			std::cout << "\tg för GET." << std::endl;
+			std::cout << "\to för POST." << std::endl;
+			std::cout << "\tu för PUT." << std::endl;
+			std::cout << "\td för DELETE." << std::endl;
+			std::cout << "\tq för att avsluta." << std::endl;
 
 			std::cin >> input;
 
@@ -234,7 +234,7 @@ int main(int argc, char** argv)
 				std::cout << bytesSent << " bytes skickat" << std::endl << std::endl;
 
 
-				std::cout << "Vï¿½ntar pï¿½ svar..." << std::endl;
+				std::cout << "Väntar på svar..." << std::endl;
 
 				int bytesReceived = socket->receiveFrom(buf, UDP_MAX_SIZE, receiveAddr);
 				std::cout << bytesReceived << " bytes mottagna" << std::endl << std::endl;

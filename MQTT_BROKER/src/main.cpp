@@ -27,46 +27,6 @@ struct MqttParseData
 	int lengthBytes = 0;
 	uint32_t messageLength = 0;
 };
-
-bool testTestMqtt(uint8_t currentByte, MqttParseData& parseData)
-{
-	switch(parseData.state)
-	{
-		case ParseState::HEADER:
-			{
-				parseData.control = currentByte >> 4;
-				parseData.flags = currentByte | 0x0F;
-
-				parseData.state = ParseState::LENGTH;
-				return true;
-			} break;
-		case ParseState::LENGTH:
-			{
-				parseData.messageLength |= (currentByte & 0x7f) << (7 * parseData.lengthBytes++);
-
-				if(currentByte == 0)
-					return false;
-				
-				if((currentByte & 0x80) == 0 || parseData.lengthBytes >= 4)
-					parseData.state = ParseState::VAR_HEADER;
-			} break;
-		case ParseState::VAR_HEADER:
-			{
-				parseData.bytesParsed++;
-				if(parseData.bytesParsed >= parseData.messageLength)
-					return false;
-			} break;
-		case ParseState::PAYLOAD:
-			{
-				parseData.bytesParsed++;
-				if(parseData.bytesParsed >= parseData.messageLength)
-					return false;
-			} break;
-	}
-
-	return true;
-}
-
 void printControlValue(uint8_t control)
 {
 	switch(control)
@@ -139,6 +99,46 @@ void printControlValue(uint8_t control)
 			break;
 	}
 }
+bool testTestMqtt(uint8_t currentByte, MqttParseData& parseData)
+{
+	switch(parseData.state)
+	{
+		case ParseState::HEADER:
+			{
+				parseData.control = currentByte >> 4;
+				parseData.flags = currentByte | 0x0F;
+
+				parseData.state = ParseState::LENGTH;
+				return true;
+			} break;
+		case ParseState::LENGTH:
+			{
+				parseData.messageLength |= (currentByte & 0x7f) << (7 * parseData.lengthBytes++);
+
+				if(currentByte == 0)
+					return false;
+				
+				if((currentByte & 0x80) == 0 || parseData.lengthBytes >= 4)
+					parseData.state = ParseState::VAR_HEADER;
+			} break;
+		case ParseState::VAR_HEADER:
+			{
+				parseData.bytesParsed++;
+				if(parseData.bytesParsed >= parseData.messageLength)
+					return false;
+			} break;
+		case ParseState::PAYLOAD:
+			{
+				parseData.bytesParsed++;
+				if(parseData.bytesParsed >= parseData.messageLength)
+					return false;
+			} break;
+	}
+
+	return true;
+}
+
+
 
 void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& parseData)
 {
@@ -175,7 +175,10 @@ void connHandler(SocketInterface* sock)
 	
 	printControlValue(parseData.control);
 	std::cout << "Message Length: " << parseData.messageLength << std::endl;
+	std::cout << buf << std::endl;
+	uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
 
+	clientSock->send((char*)ack,4);
 	clientSock->shutdown(SocketShutdownType::RDWR);
 }
 

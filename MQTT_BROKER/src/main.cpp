@@ -99,7 +99,8 @@ void printControlValue(uint8_t control)
 			break;
 	}
 }
-bool testTestMqtt(uint8_t currentByte, MqttParseData& parseData)
+
+bool parseByte(uint8_t currentByte, MqttParseData& parseData)
 {
 	switch(parseData.state)
 	{
@@ -151,7 +152,7 @@ void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& pa
 
 		while(continueParsing)
 		{
-			continueParsing = testTestMqtt(buf[bytesParsed++], parseData);
+			continueParsing = parseByte(buf[bytesParsed++], parseData);
 			if(bytesParsed >= bytesReceived)
 				break;
 		}
@@ -166,7 +167,7 @@ void connHandler(SocketInterface* sock)
 
 	std::cout << clientAddress.host << " : " << clientAddress.port << std::endl;
 
-	constexpr int bufSize = 1;
+	constexpr int bufSize = 1024;
 	char buf[bufSize];
 
 	MqttParseData parseData;
@@ -175,23 +176,15 @@ void connHandler(SocketInterface* sock)
 	
 	printControlValue(parseData.control);
 	std::cout << "Message Length: " << parseData.messageLength << std::endl;
-	std::cout << buf << std::endl;
-	uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
 
-	clientSock->send((char*)ack,4);
+	uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
+	clientSock->send((char*)ack, 4);
+
 	clientSock->shutdown(SocketShutdownType::RDWR);
 }
 
 int main(int argc, char** argv)
 {
-	//uint8_t test[] = { 0x20, 0x80, 0x80, 0x80, 0x01 };
-	//MqttParseData parseData;
-
-	//for(int i = 0; i < 5; i++)
-	//	std::cout << testTestMqtt(test[i], parseData) << std::endl;
-
-	//std::cout << parseData.messageLength << std::endl;
-
 	std::unique_ptr<SocketInterface> serverSock = std::make_unique<Socket>(SocketType::STREAM);
 
 	serverSock->bind({"0.0.0.0", 1883});

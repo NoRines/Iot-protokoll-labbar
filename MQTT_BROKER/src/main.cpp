@@ -124,7 +124,7 @@ void parseConnectMessage(uint8_t* data, int bytes)
 	protName[3] = *data++;
 	bytes -= 4;
 
-	if(strcmp(protName, "MQTT") || bytes <= 0)
+	if(strcmp(protName, "MQTT") != 0 || bytes <= 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return;
@@ -256,6 +256,12 @@ void connHandler(SocketInterface* sock)
 	clientSock->shutdown(SocketShutdownType::RDWR);
 }
 
+void stopThread(SocketInterface* serverSock)
+{
+	std::cin.get();
+	serverSock->shutdown(SocketShutdownType::RD);
+}
+
 int main(int argc, char** argv)
 {
 	std::unique_ptr<SocketInterface> serverSock = std::make_unique<Socket>(SocketType::STREAM);
@@ -265,14 +271,23 @@ int main(int argc, char** argv)
 	serverSock->listen();
 	std::cout << "Listening..." << std::endl;
 
+	std::thread stop(stopThread, serverSock.get());
+
 	while(1)
 	{
-		SocketInterface* sock = serverSock->accept();
-		std::thread handleConnection(connHandler, sock);
-		handleConnection.detach();
+		try
+		{
+			SocketInterface* sock = serverSock->accept();
+			std::thread handleConnection(connHandler, sock);
+			handleConnection.detach();
+		}
+		catch(std::string s)
+		{
+			break;
+		}
 	}
 
-	serverSock->shutdown(SocketShutdownType::RDWR);
+	stop.join();
 
 	return 0;
 }

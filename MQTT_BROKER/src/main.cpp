@@ -134,6 +134,11 @@ void connHandler(SocketInterface* sock)
 			uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
 			clientSock->send((char*)ack, 4);
 		}
+		else if(sessionData.type == std::string("PING"))
+		{
+			uint8_t pong[] = { 0xd0, 0x00 };
+			clientSock->send((char*)pong, 2);
+		}
 	}
 
 	std::cout << "End of connection" << std::endl;

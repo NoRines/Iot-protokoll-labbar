@@ -73,6 +73,12 @@ WinSocket::WinSocket(SocketType type) : SocketInterface()
 	{
 		throw std::string("creating socket failed: %d\n", WSAGetLastError());
 	}
+
+	int enable = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+	{
+		throw std::string("Could not create Socket. Socket opt could not be set. %d\n", WSAGetLastError());
+	}
 }
 
 WinSocket::~WinSocket()

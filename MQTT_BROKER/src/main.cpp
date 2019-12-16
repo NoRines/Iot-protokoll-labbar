@@ -281,13 +281,14 @@ int main(int argc, char** argv)
 			std::thread handleConnection(connHandler, sock);
 			handleConnection.detach();
 		}
-		catch(std::string s)
+		catch(...)
 		{
 			break;
 		}
 	}
 
 	stop.join();
+
 
 	return 0;
 }

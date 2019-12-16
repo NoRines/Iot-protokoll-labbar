@@ -249,4 +249,17 @@ Address WinSocket::getAddress()
 
 	return toAddress(hint);
 }
+
+void WinSocket::setTimeout(int seconds)
+{
+	timeval timeout;
+    timeout.tv_sec = seconds;
+    timeout.tv_usec = 0;
+
+    if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+	{
+		throw std::string("Error setting socket timeout.");
+	}
+}
+
 #endif

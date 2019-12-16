@@ -34,15 +34,17 @@ public:
 	void close() override;
 	Address getAddress() override;
 
+	void setTimeout(int seconds) override;
+
 private:
 
 	static void initWsa();
 	static void quitWsa();
 	static int numSocketsActive;
-	
+
 	SOCKET sock;
 	WinSocket(SOCKET s);
-	
+
 };
 
 #endif

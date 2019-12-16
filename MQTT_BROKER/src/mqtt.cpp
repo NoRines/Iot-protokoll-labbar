@@ -86,8 +86,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	return true;
 }
 
-
-bool handleMessage(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)
+bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)
 {
 	switch(control)
 	{
@@ -153,8 +152,8 @@ bool handleMessage(uint8_t control, const std::vector<uint8_t>& contents, MqttSe
 			} break;
 		case 12:
 			{
-				std::cout << "Ping request" << std::endl;
-				return false;
+				sessionData.type = "PING";
+				return true;
 			} break;
 		case 13:
 			{

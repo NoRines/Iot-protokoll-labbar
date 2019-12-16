@@ -11,6 +11,6 @@ struct MqttSessionData
 	uint16_t keepAlive;
 };
 
-bool handleMessage(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData);
+bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData);
 
 #endif

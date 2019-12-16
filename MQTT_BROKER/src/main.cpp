@@ -69,7 +69,7 @@ bool parseByte(uint8_t currentByte, MqttParseData& parseData)
 
 
 
-void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& parseData)
+bool getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& parseData)
 {
 	bool continueParsing = true;
 	do
@@ -78,6 +78,9 @@ void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& pa
 		int bytesParsed = 0;
 		int bytesReceived = sock->receive(buf, bufSize);
 
+		if(bytesReceived == 0)
+			return false;
+
 		while(continueParsing)
 		{
 			continueParsing = parseByte(buf[bytesParsed++], parseData);
@@ -85,6 +88,7 @@ void getMessage(SocketInterface* sock, char* buf, int bufSize, MqttParseData& pa
 				break;
 		}
 	} while(continueParsing);
+	return true;
 }
 
 void connHandler(SocketInterface* sock)
@@ -99,30 +103,17 @@ void connHandler(SocketInterface* sock)
 	char buf[bufSize];
 
 	MqttParseData parseData;
-
-	getMessage(clientSock.get(), buf, bufSize, parseData);
-	std::cout << "Message Length: " << parseData.messageLength << std::endl;
-
 	MqttSessionData sessionData;
-	if(!handleMessage(parseData.control, parseData.contents, sessionData))
-	{
-		clientSock->shutdown(SocketShutdownType::RDWR);
-		return;
-	}
 
-	std::cout << sessionData.type << " : " << sessionData.clientId << " : " << sessionData.keepAlive << std::endl;
-
-	uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
-	clientSock->send((char*)ack, 4);
-
-	clientSock->setTimeout(sessionData.keepAlive);
+	clientSock->setTimeout(5);
 
 	while(1)
 	{
 		try
 		{
 			parseData = MqttParseData();
-			getMessage(clientSock.get(), buf, bufSize, parseData);
+			if(!getMessage(clientSock.get(), buf, bufSize, parseData))
+				break;
 		}
 		catch(...)
 		{
@@ -130,8 +121,19 @@ void connHandler(SocketInterface* sock)
 			break;
 		}
 
-		if(!handleMessage(parseData.control, parseData.contents, sessionData))
+		std::cout << "Message Length: " << parseData.messageLength << std::endl;
+		if(!updateMqttSession(parseData.control, parseData.contents, sessionData))
 			break;
+
+		std::cout << sessionData.type << " : " << sessionData.clientId << " : " << sessionData.keepAlive << std::endl;
+
+		// TEMP
+		if(sessionData.type == std::string("CON"))
+		{
+			clientSock->setTimeout(sessionData.keepAlive);
+			uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
+			clientSock->send((char*)ack, 4);
+		}
 	}
 
 	std::cout << "End of connection" << std::endl;

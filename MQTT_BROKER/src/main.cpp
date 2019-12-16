@@ -139,6 +139,10 @@ void connHandler(SocketInterface* sock)
 			uint8_t pong[] = { 0xd0, 0x00 };
 			clientSock->send((char*)pong, 2);
 		}
+		else if(sessionData.type == std::string("PUB"))
+		{
+			std::cout << sessionData.topic << " : " << sessionData.message << std::endl;
+		}
 	}
 
 	std::cout << "End of connection" << std::endl;

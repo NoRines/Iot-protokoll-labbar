@@ -115,6 +115,8 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 		return false;
 	}
 
+	sessionData.topic = topicName;
+
 	// Since we do not care about QoS we will not care about the packet identifier
 
 	// Read the message
@@ -125,9 +127,9 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 		bytes--;
 	}
 
-	std::cout << "Message : " << message << std::endl;
+	sessionData.message = message;
 
-	return false;
+	return true;
 }
 
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)

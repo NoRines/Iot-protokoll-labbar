@@ -10,7 +10,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data += 2;
 	bytes -= 2;
 
-	if(nameLen != 4 || bytes <= 0)
+	if(nameLen != 4 || bytes < 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return false;
@@ -24,7 +24,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	protName[3] = *data++;
 	bytes -= 4;
 
-	if(strcmp(protName, "MQTT") != 0 || bytes <= 0)
+	if(strcmp(protName, "MQTT") != 0 || bytes < 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return false;
@@ -38,7 +38,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data++;
 	bytes--;
 
-	if(bytes <= 0)
+	if(bytes < 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return false;
@@ -49,7 +49,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data += 2;
 	bytes -= 2;
 
-	if(bytes <= 0)
+	if(bytes < 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return false;
@@ -61,7 +61,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data += 2;
 	bytes -= 2;
 
-	if(bytes <= 0)
+	if(bytes < 0)
 	{
 		std::cout << "Error: connection message malformed" << std::endl;
 		return false;
@@ -86,6 +86,50 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	return true;
 }
 
+static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
+{
+	// We do not care about Quality of service
+
+	// Get the length of the topic name
+	uint16_t topicNameLen = (*data << 8) | *(data + 1);
+	data += 2;
+	bytes -= 2;
+
+	if(bytes < 0)
+	{
+		std::cout << "Error: publish message malformed" << std::endl;
+		return false;
+	}
+
+	// Read the topic name
+	std::string topicName;
+	for(int i = 0; i < topicNameLen; i++)
+	{
+		topicName.push_back(*data++);
+		bytes--;
+	}
+
+	if(bytes < 0)
+	{
+		std::cout << "Error: publish message malformed" << std::endl;
+		return false;
+	}
+
+	// Since we do not care about QoS we will not care about the packet identifier
+
+	// Read the message
+	std::string message;
+	while(bytes > 0)
+	{
+		message.push_back(*data++);
+		bytes--;
+	}
+
+	std::cout << "Message : " << message << std::endl;
+
+	return false;
+}
+
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)
 {
 	switch(control)
@@ -107,8 +151,8 @@ bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, Mq
 			} break;
 		case 3:
 			{
-				std::cout << "Publish" << std::endl;
-				return false;
+				sessionData.type = "PUB";
+				return parsePublishMessage(contents.data(), contents.size(), sessionData);
 			} break;
 		case 4:
 			{

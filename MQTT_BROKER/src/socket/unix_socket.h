@@ -32,6 +32,8 @@ public:
 	void close() override;
 	Address getAddress() override;
 
+	void setTimeout(int seconds) override;
+
 private:
 	UnixSocket(int s);
 

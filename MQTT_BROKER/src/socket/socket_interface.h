@@ -45,10 +45,12 @@ public:
 
 	virtual int receive(char* buf, int bufSize) = 0;
 	virtual int receiveFrom(char* buf, int bufSize, Address& address) = 0;
-	
+
 	virtual void shutdown(SocketShutdownType type) = 0;
 	virtual void close() = 0;
 	virtual Address getAddress() = 0;
+
+	virtual void setTimeout(int seconds) = 0;
 };
 
 #endif

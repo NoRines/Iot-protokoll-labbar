@@ -131,6 +131,30 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 
 	return true;
 }
+bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
+{
+	//variable header
+	uint16_t packetId = (*data << 8) | *(data + 1);
+	data += 2;
+	bytes -= 2;
+	//payload
+	while (bytes > 0)
+	{
+		uint16_t topiclen = (*data << 8) | *(data + 1);
+		data += 2;
+		bytes -= 2;
+		std::string topic;
+		for (uint16_t i = 0; i < topiclen; i++)
+			topic.push_back(*data++);
+		bytes -= topiclen;
+		uint8_t qos = *data++;
+		bytes--;
+		if (qos == 0)
+		{
+			std::cout<<"topic: "<< topic.c_str() << std::endl;
+		}
+	}
+}
 
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)
 {

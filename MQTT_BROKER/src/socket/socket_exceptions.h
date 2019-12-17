@@ -2,7 +2,7 @@
 #define SOCKET_EXCEPTIONS_H
 
 #include <exception>
-
+#include <string>
 class SocketException : public std::exception
 {
 	std::string message;

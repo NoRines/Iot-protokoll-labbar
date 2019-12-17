@@ -143,6 +143,10 @@ void connHandler(SocketInterface* sock)
 		{
 			std::cout << sessionData.topic << " : " << sessionData.message << std::endl;
 		}
+		else
+		{
+			std::cout << sessionData.type << std::endl;
+		}
 	}
 
 	std::cout << "End of connection" << std::endl;

@@ -74,7 +74,7 @@ WinSocket::WinSocket(SocketType type) : SocketInterface()
 		throw std::string("creating socket failed: %d\n", WSAGetLastError());
 	}
 
-	int enable = 1;
+	char enable = 1;
 	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
 	{
 		throw std::string("Could not create Socket. Socket opt could not be set. %d\n", WSAGetLastError());
@@ -252,9 +252,7 @@ Address WinSocket::getAddress()
 
 void WinSocket::setTimeout(int seconds)
 {
-	timeval timeout;
-    timeout.tv_sec = seconds;
-    timeout.tv_usec = 0;
+	DWORD timeout = (seconds +1) * 1000;
 
     if(setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
 	{

@@ -159,6 +159,19 @@ void stopThread(SocketInterface* serverSock)
 	serverSock->shutdown(SocketShutdownType::RD);
 }
 
+// Dummy func
+class SocketInterface;
+std::pair<OutgoingMessage, SocketInterface*> popFunc();
+
+void sendThread()
+{
+	while(running)
+	{
+		auto msg = popFunc();
+		msg.second->send(msg.data, msg.length);
+	}
+}
+
 int main(int argc, char** argv)
 {
 	std::unique_ptr<SocketInterface> serverSock = std::make_unique<Socket>(SocketType::STREAM);

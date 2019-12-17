@@ -131,6 +131,7 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 
 	return true;
 }
+
 bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
 {
 	//variable header
@@ -154,6 +155,7 @@ bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sess
 			std::cout<<"topic: "<< topic.c_str() << std::endl;
 		}
 	}
+	return false;
 }
 
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)

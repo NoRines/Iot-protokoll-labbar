@@ -1,10 +1,20 @@
 #include "sendqueue.h"
+#include <iostream>
 #include <queue>
 #include <mutex>
+#include <condition_variable>
 
+
+static volatile bool programRunning = true;
 static std::queue<outmsg> outgoingqueue;
 static std::mutex queueLock;
 static std::condition_variable cv;
+
+void interruptQueue()
+{
+	programRunning = false;
+	cv.notify_all();
+}
 
 void pushQueue(outmsg outgoing)
 {
@@ -16,10 +26,14 @@ void pushQueue(outmsg outgoing)
 outmsg popQueue()
 {
 	std::unique_lock<std::mutex> lock(queueLock);
-	while (outgoingqueue.empty())
+
+	cv.wait(lock, [&](){ return !outgoingqueue.empty() || !programRunning; });
+
+	if(!programRunning)
 	{
-		cv.wait(lock);
+		throw std::string("Program stopped");
 	}
+
 	outmsg val = outgoingqueue.front();
 	outgoingqueue.pop();
 	return val;

@@ -1,7 +1,10 @@
 #ifndef SENDQUEUE_H
 #define SENDQUEUE_H
+
 #include <utility>
+
 class SocketInterface;
+
 struct OutgoingMessage
 {
 	char* data;
@@ -10,8 +13,9 @@ struct OutgoingMessage
 
 using outmsg = std::pair<OutgoingMessage, SocketInterface*>;
 
-void pushQueue(outmsg outgoing);
 
+void interruptQueue();
+void pushQueue(outmsg outgoing);
 outmsg popQueue();
 
 #endif // !SENDQUEUE_H

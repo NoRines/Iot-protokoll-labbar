@@ -40,6 +40,8 @@ struct MqttParseData
 	uint8_t control = 0;
 	uint8_t flags = 0;
 
+	std::array<uint8_t, 4> rawRemaningLen;
+
 	uint32_t bytesParsed = 0;
 
 	int lengthBytes = 0;
@@ -63,6 +65,8 @@ bool parseByte(uint8_t currentByte, MqttParseData& parseData)
 			} break;
 		case ParseState::LENGTH:
 			{
+				parseData.rawRemaningLen[parseData.lengthBytes] = currentByte;
+
 				parseData.messageLength |= (currentByte & 0x7f) << (7 * parseData.lengthBytes++);
 
 				if(currentByte == 0)
@@ -179,7 +183,18 @@ void connHandler(SocketInterface* sock)
 
 					for (const auto& user : userList)
 					{
-						pushQueue(std::make_pair(OutgoingMessage{ (char*)parseData.contents.data(), (int)parseData.contents.size() }, clientSockets[user]));
+						auto it = clientSockets.find(user);
+						if (it != clientSockets.end())
+						{
+							std::cout << "content size: " << parseData.contents.size() << std::endl;
+							std::vector<uint8_t> send_msg = { (uint8_t)((parseData.control << 4) | parseData.flags)};
+							for (int i = 0; i < parseData.lengthBytes; i++)
+								send_msg.push_back(parseData.rawRemaningLen[i]);
+							for (int i = 0; i < parseData.contents.size(); i++)
+								send_msg.push_back(parseData.contents[i]);
+							pushQueue(std::make_pair(OutgoingMessage{ (char*)send_msg.data(), (int)send_msg.size() }, clientSockets[user]));
+						}
+							
 					}
 				}
 			}
@@ -205,7 +220,7 @@ void connHandler(SocketInterface* sock)
 					topicMap[sessionData.topic].push_back(sessionData.clientId);
 
 					uint8_t lsb = sessionData.packetId;
-					uint8_t subAck[] = {0x90, 0x03,(uint8_t)(sessionData.packetId >> 4), lsb, 0x00 };
+					uint8_t subAck[] = {0x90, 0x03,(uint8_t)(sessionData.packetId >> 8), lsb, 0x00 };
 
 					pushQueue(std::make_pair(OutgoingMessage{(char*)subAck, 5 },clientSockets[sessionData.clientId]));
 				}
@@ -251,6 +266,7 @@ void sendThread()
 		}
 		catch(...)
 		{
+
 		}
 	}
 }

@@ -135,9 +135,20 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
 {
 	//variable header
+	if (bytes < 1)
+	{
+		std::cout << "malformed subscribe message" << std::endl;
+		return false;
+	}
 	uint16_t packetId = (*data << 8) | *(data + 1);
 	data += 2;
 	bytes -= 2;
+	sessionData.packetId = packetId;
+	if (bytes < 0)
+	{
+		std::cout << "malformed subscribe message" << std::endl;
+		return false;
+	}
 	//payload
 	while (bytes > 0)
 	{
@@ -152,10 +163,10 @@ bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sess
 		bytes--;
 		if (qos == 0)
 		{
-			std::cout<<"topic: "<< topic.c_str() << std::endl;
+			sessionData.topic = topic;
 		}
 	}
-	return false;
+	return true;
 }
 
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)
@@ -204,13 +215,13 @@ bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, Mq
 			} break;
 		case 8:
 			{
-				std::cout << "Subscribe" << std::endl;
-				return false;
+				sessionData.type = "SUB";
+				return parseSubscribeMessage(contents.data(), contents.size(), sessionData);
 			} break;
 		case 9:
 			{
 				std::cout << "Acknowledge subscribe" << std::endl;
-				return false;
+				return true;
 			} break;
 		case 10:
 			{

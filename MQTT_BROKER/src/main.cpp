@@ -15,12 +15,16 @@
 #include "sendqueue.h"
 
 using SocketMap = std::unordered_map<std::string, SocketInterface*>;
-
+using TopicMap = std::unordered_map<std::string, std::vector<std::string>>;
 // GLOBAL VARS__________
 static volatile bool GLOBAL_RUNNING = true; // Får endast ändras i stopThread
-
+//sockets
 static std::mutex clientSocketsMutex;
 static SocketMap clientSockets;
+
+//topics
+static TopicMap topicMap;
+static std::mutex topicMapMutex;
 
 enum class ParseState
 {
@@ -163,6 +167,50 @@ void connHandler(SocketInterface* sock)
 		else if(sessionData.type == std::string("PUB"))
 		{
 			std::cout << sessionData.topic << " : " << sessionData.message << std::endl;
+
+			{
+				std::lock_guard<std::mutex> guard1(topicMapMutex);
+				std::lock_guard<std::mutex> guard2(clientSocketsMutex);
+
+				auto it = topicMap.find(sessionData.topic);
+				if (it != topicMap.end())
+				{
+					const auto& userList = topicMap[sessionData.topic];
+
+					for (const auto& user : userList)
+					{
+						pushQueue(std::make_pair(OutgoingMessage{ (char*)parseData.contents.data(), (int)parseData.contents.size() }, clientSockets[user]));
+					}
+				}
+			}
+			
+
+		}
+		else if (sessionData.type == std::string("SUB"))
+		{
+			std::cout << sessionData.topic << std::endl;
+			{
+				// Lägger till userid till subscribat topic
+				std::lock_guard<std::mutex> guard(topicMapMutex);
+
+				auto it = topicMap.find(sessionData.topic);
+				if (it == topicMap.end())
+				{
+					topicMap[sessionData.topic] = std::vector<std::string>();
+					
+				}
+				auto client_it = std::find(topicMap[sessionData.topic].begin(), topicMap[sessionData.topic].end(), sessionData.clientId);
+				if (client_it == std::end(topicMap[sessionData.topic]))
+				{
+					topicMap[sessionData.topic].push_back(sessionData.clientId);
+
+					uint8_t lsb = sessionData.packetId;
+					uint8_t subAck[] = {0x90, 0x03,(uint8_t)(sessionData.packetId >> 4), lsb, 0x00 };
+
+					pushQueue(std::make_pair(OutgoingMessage{(char*)subAck, 5 },clientSockets[sessionData.clientId]));
+				}
+
+			}
 		}
 	}
 

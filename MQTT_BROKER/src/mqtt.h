@@ -11,6 +11,7 @@ struct MqttSessionData
 	uint16_t keepAlive;
 
 	std::string topic;
+	uint16_t packetId;
 	std::string message;
 };
 

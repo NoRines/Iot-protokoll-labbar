@@ -165,7 +165,8 @@ bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sess
 		bytes--;
 		if (qos == 0)
 		{
-			std::cout<<"topic: "<< topic.c_str() << std::endl;
+			sessionData.topic = topic;
+			return true;
 		}
 	}
 	return false;
@@ -217,9 +218,8 @@ bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, Mq
 			} break;
 		case 8:
 			{
-				std::cout << "Subscribe" << std::endl;
-				parseSubscribeMessage(contents.data(), contents.size(), sessionData);
-				return false;
+				sessionData.type = "SUB";
+				return parseSubscribeMessage(contents.data(), contents.size(), sessionData);
 			} break;
 		case 9:
 			{

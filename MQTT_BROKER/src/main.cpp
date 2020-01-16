@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <mutex>
+#include <algorithm>
 
 #include "socket/socket.h"
 
@@ -170,6 +171,25 @@ void connHandler(SocketInterface* sock)
 		else if(sessionData.type == std::string("PUB"))
 		{
 			std::cout << sessionData.topic << " : " << sessionData.message << std::endl;
+		}
+		else if(sessionData.type == std::string("SUB"))
+		{
+			std::lock_guard<std::mutex> guard(topicMapMutex);
+
+			/* Create user list if topic exists */ {
+				auto it = topicMap.find(sessionData.topic);
+				if(it == topicMap.end())
+					topicMap[sessionData.topic] = UserList();
+			}
+
+			// Get user list
+			auto& userList = topicMap[sessionData.topic];
+
+			/* Check for id in user list */ {
+				auto it = std::find(userList.begin(), userList.end(), sessionData.clientId);
+				if(it == userList.end())
+					userList.push_back(sessionData.clientId);
+			}
 		}
 	}
 

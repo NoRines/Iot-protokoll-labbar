@@ -3,24 +3,21 @@
 
 #include "mqtt.h"
 
+#define ERR(b, msg) \
+	if(b) { \
+		std::cout << msg << std::endl; \
+		return false; }
+
 static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
 {
-	if(bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: connection message malformed")
 
 	// Check if the length of the protocol name is correct.
 	uint16_t nameLen = (*data << 8) | *(data + 1);
 	data += 2;
 	bytes -= 2;
 
-	if(nameLen != 4 || bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(nameLen != 4 || bytes <= 0, "Error: connection message malformed")
 
 	// Read the name and check if it is correct.
 	char protName[5] = {0};
@@ -30,11 +27,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	protName[3] = *data++;
 	bytes -= 4;
 
-	if(strcmp(protName, "MQTT") != 0 || bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(strcmp(protName, "MQTT") != 0 || bytes <= 0, "Error: connection message malformed")
 
 	// We dont care about protocol level
 	data++;
@@ -44,22 +37,15 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data++;
 	bytes--;
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: connection message malformed")
 
 	// Read the keep alive value
 	uint16_t keepAlive = (*data << 8) | *(data + 1);
 	data += 2;
 	bytes -= 2;
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: connection message malformed")
+
 	sessionData.keepAlive = keepAlive;
 
 	// Read the client id length
@@ -67,11 +53,7 @@ static bool parseConnectMessage(const uint8_t* data, int bytes, MqttSessionData&
 	data += 2;
 	bytes -= 2;
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: connection message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: connection message malformed")
 
 	// Read the client id
 	std::string clientId;
@@ -90,22 +72,14 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 {
 	// We do not care about Quality of service
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: publish message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: publish message malformed")
 
 	// Get the length of the topic name
 	uint16_t topicNameLen = (*data << 8) | *(data + 1);
 	data += 2;
 	bytes -= 2;
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: publish message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: publish message malformed")
 
 	// Read the topic name
 	std::string topicName;
@@ -115,11 +89,7 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 		bytes--;
 	}
 
-	if(bytes <= 0)
-	{
-		std::cout << "Error: publish message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: publish message malformed")
 
 	sessionData.topic = topicName;
 
@@ -133,6 +103,8 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 		bytes--;
 	}
 
+	ERR(bytes < 0, "Error: publish message malformed")
+
 	sessionData.message = message;
 
 	return true;
@@ -140,11 +112,7 @@ static bool parsePublishMessage(const uint8_t* data, int bytes, MqttSessionData&
 
 bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
 {
-	if(bytes <= 0)
-	{
-		std::cout << "Error: subscribe message malformed" << std::endl;
-		return false;
-	}
+	ERR(bytes <= 0, "Error: subscribe message malformed")
 
 	//variable header
 	uint16_t packetId = (*data << 8) | *(data + 1);
@@ -170,6 +138,35 @@ bool parseSubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sess
 		}
 	}
 	return false;
+}
+
+bool parseUnsubscribeMessage(const uint8_t* data, int bytes, MqttSessionData& sessionData)
+{
+	ERR(bytes <= 0, "Error: unsubscribe message malformed")
+
+	//variable header
+	uint16_t packetId = (*data << 8) | *(data + 1);
+	data += 2;
+	bytes -= 2;
+
+	ERR(bytes <= 0, "Error: unsubscribe message malformed")
+
+	uint16_t topiclen = (*data << 8) | *(data + 1);
+	data += 2;
+	bytes -= 2;
+
+
+	ERR(bytes <= 0, "Error: unsubscribe message malformed")
+
+	std::string topic;
+	for (uint16_t i = 0; i < topiclen; i++)
+		topic.push_back(*data++);
+	bytes -= topiclen;
+
+	ERR(bytes < 0, "Error: unsubscribe message malformed")
+
+	sessionData.topic = topic;
+	return true;
 }
 
 bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, MqttSessionData& sessionData)

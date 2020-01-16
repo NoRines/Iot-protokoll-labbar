@@ -225,8 +225,8 @@ bool updateMqttSession(uint8_t control, const std::vector<uint8_t>& contents, Mq
 			} break;
 		case 10:
 			{
-				std::cout << "Unsubscribe" << std::endl;
-				return false;
+				sessionData.type = "UNSUB";
+				return parseUnsubscribeMessage(contents.data(), contents.size(), sessionData);
 			} break;
 		case 11:
 			{

@@ -50,11 +50,14 @@ struct MqttParseData
 	uint32_t messageLength = 0;
 
 	std::vector<uint8_t> contents;
+	std::vector<uint8_t> rawMessage;
 };
 
 
 bool parseByte(uint8_t currentByte, MqttParseData& parseData)
 {
+	parseData.rawMessage.push_back(currentByte);
+
 	switch(parseData.state)
 	{
 		case ParseState::HEADER:
@@ -136,8 +139,9 @@ void connHandler(SocketInterface* sock)
 			if(!getMessage(clientSock.get(), buf, bufSize, parseData))
 				break;
 		}
-		catch(...)
+		catch(std::string s)
 		{
+			std::cout << s << std::endl;
 			std::cout << "Timeout on receive, closing connection." << std::endl;
 			break;
 		}
@@ -160,17 +164,49 @@ void connHandler(SocketInterface* sock)
 			}
 
 			clientSock->setTimeout(sessionData.keepAlive);
-			uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
+			static uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
 			pushQueue(std::make_pair(OutgoingMessage{ (char*)ack, 4 }, clientSock.get()));
 		}
 		else if(sessionData.type == std::string("PING"))
 		{
-			uint8_t pong[] = { 0xd0, 0x00 };
+			static uint8_t pong[] = { 0xd0, 0x00 };
 			pushQueue(std::make_pair(OutgoingMessage{ (char*)pong, 2 }, clientSock.get()));
 		}
 		else if(sessionData.type == std::string("PUB"))
 		{
-			std::cout << sessionData.topic << " : " << sessionData.message << std::endl;
+			std::lock_guard<std::mutex> guard(topicMapMutex);
+
+			/* Make sure topic exists */ {
+				auto it = topicMap.find(sessionData.topic);
+				if(it == topicMap.end())
+				{
+					std::cout << "No one subbed to topic: " << sessionData.topic << std::endl;
+					continue;
+				}
+			}
+
+			// Get user list
+			const auto& userList = topicMap[sessionData.topic];
+
+			// Copy the raw message to thread_local stack to avoid destruction
+			thread_local std::vector<uint8_t> pubVec;
+			pubVec = parseData.rawMessage;
+
+			/* Send to each socket in user list */ {
+				std::lock_guard<std::mutex> socketGuard(socketMapMutex);
+
+				for(auto& user : userList)
+				{
+					auto it = socketMap.find(user);
+					if(it == socketMap.end())
+					{
+						std::cout << "No socket for id: " << user << std::endl;
+						continue;
+					}
+
+					pushQueue(std::make_pair(OutgoingMessage{ (char*)pubVec.data(), (int)pubVec.size() }, it->second));
+				}
+			}
 		}
 		else if(sessionData.type == std::string("SUB"))
 		{
@@ -189,6 +225,37 @@ void connHandler(SocketInterface* sock)
 				auto it = std::find(userList.begin(), userList.end(), sessionData.clientId);
 				if(it == userList.end())
 					userList.push_back(sessionData.clientId);
+			}
+		}
+		else if(sessionData.type == std::string("UNSUB"))
+		{
+			std::lock_guard<std::mutex> guard(topicMapMutex);
+
+			/* Make sure topic exists */ {
+				auto it = topicMap.find(sessionData.topic);
+				if(it == topicMap.end())
+				{
+					std::cout << "Unsubscribing to topic that does not exist" << std::endl;
+					break;
+				}
+			}
+
+			// Get user list
+			auto& userList = topicMap[sessionData.topic];
+
+			/* Delete id from the user list */ {
+				auto it = std::find(userList.begin(), userList.end(), sessionData.clientId);
+				if(it == userList.end())
+				{
+					std::cout << "Unsubscribing to topic while not subscribed" << std::endl;
+					break;
+				}
+				userList.erase(it);
+			}
+
+			/* Remove topic if empty */ {
+				auto it = topicMap.find(sessionData.topic);
+				topicMap.erase(it);
 			}
 		}
 	}

@@ -321,7 +321,7 @@ int UnixSocket::receive(char* buf, int bufSize)
 
 	if(recvRes < 0)
 	{
-		throw std::string("Error when receiving.");
+		throw std::string("Error when receiving. " + std::to_string(errno));
 	}
 
 	return recvRes;

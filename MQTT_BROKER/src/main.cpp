@@ -14,13 +14,20 @@
 
 #include "sendqueue.h"
 
+
 using SocketMap = std::unordered_map<std::string, SocketInterface*>;
+
+using UserList = std::vector<std::string>;
+using TopicMap = std::unordered_map<std::string, UserList>;
 
 // GLOBAL VARS__________
 static volatile bool GLOBAL_RUNNING = true; // Får endast ändras i stopThread
 
-static std::mutex clientSocketsMutex;
-static SocketMap clientSockets;
+static std::mutex socketMapMutex;
+static SocketMap socketMap;
+
+static std::mutex topicMapMutex;
+static TopicMap topicMap;
 
 enum class ParseState
 {
@@ -147,8 +154,8 @@ void connHandler(SocketInterface* sock)
 
 			{
 				// En tråd lägger till sig själv i socket listan
-				std::lock_guard<std::mutex> guard(clientSocketsMutex);
-				clientSockets[sessionData.clientId] = clientSock.get();
+				std::lock_guard<std::mutex> guard(socketMapMutex);
+				socketMap[sessionData.clientId] = clientSock.get();
 			}
 
 			clientSock->setTimeout(sessionData.keepAlive);
@@ -168,8 +175,8 @@ void connHandler(SocketInterface* sock)
 
 	{
 		// En tråd tar bort sin egen socket från socket listan
-		std::lock_guard<std::mutex> guard(clientSocketsMutex);
-		clientSockets.erase(clientSockets.find(sessionData.clientId));
+		std::lock_guard<std::mutex> guard(socketMapMutex);
+		socketMap.erase(socketMap.find(sessionData.clientId));
 	}
 
 	std::cout << "End of connection" << std::endl;
@@ -182,8 +189,8 @@ void stopThread(SocketInterface* serverSock)
 
 	{
 		// Gå igenom och stäng av alla client sockets
-		std::lock_guard<std::mutex> guard(clientSocketsMutex);
-		for(auto& it : clientSockets)
+		std::lock_guard<std::mutex> guard(socketMapMutex);
+		for(auto& it : socketMap)
 			it.second->shutdown(SocketShutdownType::RD);
 	}
 

@@ -164,13 +164,13 @@ void connHandler(SocketInterface* sock)
 			}
 
 			clientSock->setTimeout(sessionData.keepAlive);
-			static uint8_t ack[] = { 0x20, 0x02 ,0x00, 0x00 };
-			pushQueue(std::make_pair(OutgoingMessage{ (char*)ack, 4 }, clientSock.get()));
+			OutgoingMessage ack = { 0x20, 0x02 ,0x00, 0x00 };
+			pushQueue(std::make_pair(ack, clientSock.get()));
 		}
 		else if(sessionData.type == std::string("PING"))
 		{
-			static uint8_t pong[] = { 0xd0, 0x00 };
-			pushQueue(std::make_pair(OutgoingMessage{ (char*)pong, 2 }, clientSock.get()));
+			OutgoingMessage pong = { 0xd0, 0x00 };
+			pushQueue(std::make_pair(pong, clientSock.get()));
 		}
 		else if(sessionData.type == std::string("PUB"))
 		{
@@ -188,10 +188,6 @@ void connHandler(SocketInterface* sock)
 			// Get user list
 			const auto& userList = topicMap[sessionData.topic];
 
-			// Copy the raw message to thread_local stack to avoid destruction
-			thread_local std::vector<uint8_t> pubVec;
-			pubVec = parseData.rawMessage;
-
 			/* Send to each socket in user list */ {
 				std::lock_guard<std::mutex> socketGuard(socketMapMutex);
 
@@ -204,7 +200,7 @@ void connHandler(SocketInterface* sock)
 						continue;
 					}
 
-					pushQueue(std::make_pair(OutgoingMessage{ (char*)pubVec.data(), (int)pubVec.size() }, it->second));
+					pushQueue(std::make_pair(parseData.rawMessage, it->second));
 				}
 			}
 		}
@@ -293,7 +289,7 @@ void sendThread()
 		try
 		{
 			auto msg = popQueue();
-			msg.second->send(msg.first.data, msg.first.length);
+			msg.second->send((char*)msg.first.data(), msg.first.size());
 		}
 		catch(...)
 		{

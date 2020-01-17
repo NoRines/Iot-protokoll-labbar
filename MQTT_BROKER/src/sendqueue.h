@@ -2,14 +2,18 @@
 #define SENDQUEUE_H
 
 #include <utility>
+#include <vector>
+#include <cstdint>
 
 class SocketInterface;
 
-struct OutgoingMessage
-{
-	char* data;
-	int length;
-};
+//struct OutgoingMessage
+//{
+//	char* data;
+//	int length;
+//};
+
+using OutgoingMessage = std::vector<uint8_t>;
 
 using outmsg = std::pair<OutgoingMessage, SocketInterface*>;
 
